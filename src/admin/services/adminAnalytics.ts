@@ -425,3 +425,371 @@ export async function getRouteInsights() {
     .sort((a, b) => b[1] - a[1])
     .map(([title, count]) => ({ title, count }));
 }
+
+// ============================================================
+// EXPLORE PAGE ANALYTICS
+// ============================================================
+
+const EXPLORE_FILTER_LABELS = [
+  "Perto de você",
+  "Abertos agora",
+  "Mais bem avaliados",
+  "Em alta hoje",
+  "Pet friendly",
+  "Com cupons",
+];
+
+// Helper: fetch feed_events filtered by a base prefix in event_type
+async function fetchExploreEvents(prefix: string, days: number | "all") {
+  const { sinceIso } = periodRange(days);
+  const { data } = await supabase
+    .from("feed_events")
+    .select("event_type, user_id, establishment_id, created_at")
+    .like("event_type", `${prefix}%`)
+    .gte("created_at", sinceIso);
+  return data ?? [];
+}
+
+function splitEventLabel(et: string): { base: string; label: string | null } {
+  const idx = et.indexOf(":");
+  if (idx < 0) return { base: et, label: null };
+  return { base: et.slice(0, idx), label: et.slice(idx + 1) };
+}
+
+// ---------- KPIs ----------
+export async function getExploreKPIs(days: number | "all" = 7) {
+  const { sinceIso, prevSinceIso, prevUntilIso } = periodRange(days);
+
+  const [viewsRes, filtersRes, catClicksRes, cardClicksRes, searchesRes] = await Promise.all([
+    supabase.from("feed_events").select("id", { count: "exact", head: true })
+      .eq("event_type", "explore_view").gte("created_at", sinceIso),
+    supabase.from("feed_events").select("id", { count: "exact", head: true })
+      .like("event_type", "explore_filter:%").gte("created_at", sinceIso),
+    supabase.from("feed_events").select("id", { count: "exact", head: true })
+      .like("event_type", "explore_category_click:%").gte("created_at", sinceIso),
+    supabase.from("feed_events").select("id", { count: "exact", head: true })
+      .like("event_type", "explore_card_click:%").gte("created_at", sinceIso),
+    supabase.from("search_queries").select("id, query, results", { count: "exact" })
+      .gte("created_at", sinceIso),
+  ]);
+
+  const sessions = viewsRes.count ?? 0;
+  const filtersUsed = filtersRes.count ?? 0;
+  const categoryClicks = catClicksRes.count ?? 0;
+  const cardClicks = cardClicksRes.count ?? 0;
+
+  const searches = searchesRes.data ?? [];
+  const searchesCount = searches.length;
+  const zeroResultSearches = searches.filter(s => (s.results ?? 0) === 0).length;
+  const searchToClickRate = searchesCount > 0
+    ? Math.round((cardClicks / searchesCount) * 1000) / 10  // raw conversion approx
+    : 0;
+
+  // previous period
+  let prevSessions = 0, prevFilters = 0, prevCat = 0, prevCard = 0, prevSearch = 0, prevZero = 0;
+  if (prevSinceIso && prevUntilIso) {
+    const [pv, pf, pc, pcc, ps] = await Promise.all([
+      supabase.from("feed_events").select("id", { count: "exact", head: true })
+        .eq("event_type", "explore_view").gte("created_at", prevSinceIso).lt("created_at", prevUntilIso),
+      supabase.from("feed_events").select("id", { count: "exact", head: true })
+        .like("event_type", "explore_filter:%").gte("created_at", prevSinceIso).lt("created_at", prevUntilIso),
+      supabase.from("feed_events").select("id", { count: "exact", head: true })
+        .like("event_type", "explore_category_click:%").gte("created_at", prevSinceIso).lt("created_at", prevUntilIso),
+      supabase.from("feed_events").select("id", { count: "exact", head: true })
+        .like("event_type", "explore_card_click:%").gte("created_at", prevSinceIso).lt("created_at", prevUntilIso),
+      supabase.from("search_queries").select("results")
+        .gte("created_at", prevSinceIso).lt("created_at", prevUntilIso),
+    ]);
+    prevSessions = pv.count ?? 0;
+    prevFilters = pf.count ?? 0;
+    prevCat = pc.count ?? 0;
+    prevCard = pcc.count ?? 0;
+    prevSearch = ps.data?.length ?? 0;
+    prevZero = ps.data?.filter((s: any) => (s.results ?? 0) === 0).length ?? 0;
+  }
+
+  return {
+    sessions,
+    searches: searchesCount,
+    zeroResultSearches,
+    categoryClicks,
+    cardClicks,
+    searchToClickRate,
+    filtersUsed,
+    deltas: {
+      sessions: pctDelta(sessions, prevSessions),
+      searches: pctDelta(searchesCount, prevSearch),
+      zeroResultSearches: pctDelta(zeroResultSearches, prevZero),
+      categoryClicks: pctDelta(categoryClicks, prevCat),
+      cardClicks: pctDelta(cardClicks, prevCard),
+      filtersUsed: pctDelta(filtersUsed, prevFilters),
+    },
+  };
+}
+
+// ---------- Filter usage ----------
+export async function getExploreFilterUsage(days: number | "all" = 7) {
+  const events = await fetchExploreEvents("explore_filter:", days);
+  const map: Record<string, number> = {};
+  EXPLORE_FILTER_LABELS.forEach(l => { map[l] = 0; });
+  events.forEach(e => {
+    const { label } = splitEventLabel(e.event_type);
+    if (!label) return;
+    map[label] = (map[label] ?? 0) + 1;
+  });
+  return Object.entries(map)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// ---------- Category performance ----------
+export async function getCategoryExplorePerformance(days: number | "all" = 7) {
+  const { sinceIso } = periodRange(days);
+
+  // category clicks (chip)
+  const catEvents = await fetchExploreEvents("explore_category_click:", days);
+  const clicksByCat: Record<string, number> = {};
+  catEvents.forEach(e => {
+    const { label } = splitEventLabel(e.event_type);
+    if (!label) return;
+    clicksByCat[label] = (clicksByCat[label] ?? 0) + 1;
+  });
+
+  // searches with category match
+  const { data: searches } = await supabase
+    .from("search_queries")
+    .select("query, results")
+    .gte("created_at", sinceIso);
+
+  // catalog health
+  const { data: ests } = await supabase
+    .from("establishments")
+    .select("id, category, total_reviews, image_url");
+
+  const { data: coupons } = await supabase
+    .from("coupons")
+    .select("establishment_id, status")
+    .eq("status", "active");
+
+  const couponsByEst = new Set((coupons ?? []).map(c => c.establishment_id).filter(Boolean));
+  const byCat: Record<string, { total: number; withReviews: number; withPhotos: number; withCoupons: number }> = {};
+  ests?.forEach(e => {
+    const c = e.category || "Outros";
+    if (!byCat[c]) byCat[c] = { total: 0, withReviews: 0, withPhotos: 0, withCoupons: 0 };
+    byCat[c].total++;
+    if ((e.total_reviews ?? 0) > 0) byCat[c].withReviews++;
+    if (e.image_url) byCat[c].withPhotos++;
+    if (couponsByEst.has(e.id)) byCat[c].withCoupons++;
+  });
+
+  const cats = Array.from(new Set([
+    ...Object.keys(byCat),
+    ...Object.keys(clicksByCat),
+  ]));
+
+  return cats.map(cat => {
+    const stats = byCat[cat] ?? { total: 0, withReviews: 0, withPhotos: 0, withCoupons: 0 };
+    const matchedSearches = (searches ?? []).filter(s =>
+      s.query?.toLowerCase().includes(cat.toLowerCase().split(" ")[0])
+    ).length;
+    return {
+      category: cat,
+      total: stats.total,
+      pctReviews: stats.total > 0 ? Math.round((stats.withReviews / stats.total) * 100) : 0,
+      pctPhotos: stats.total > 0 ? Math.round((stats.withPhotos / stats.total) * 100) : 0,
+      pctCoupons: stats.total > 0 ? Math.round((stats.withCoupons / stats.total) * 100) : 0,
+      clicks: clicksByCat[cat] ?? 0,
+      searches: matchedSearches,
+    };
+  }).sort((a, b) => b.clicks - a.clicks);
+}
+
+// ---------- Search insights ----------
+export async function getSearchInsights(days: number | "all" = 7, limit = 10) {
+  const { sinceIso } = periodRange(days);
+  const { data } = await supabase
+    .from("search_queries")
+    .select("query, results, created_at")
+    .gte("created_at", sinceIso);
+
+  const map: Record<string, { count: number; zero: number; lastAt: string; avgResults: number; sumResults: number }> = {};
+  (data ?? []).forEach(s => {
+    const q = (s.query ?? "").trim().toLowerCase();
+    if (!q) return;
+    if (!map[q]) map[q] = { count: 0, zero: 0, lastAt: s.created_at ?? "", avgResults: 0, sumResults: 0 };
+    map[q].count++;
+    map[q].sumResults += s.results ?? 0;
+    if ((s.results ?? 0) === 0) map[q].zero++;
+    if ((s.created_at ?? "") > map[q].lastAt) map[q].lastAt = s.created_at ?? "";
+  });
+
+  const rows = Object.entries(map).map(([query, s]) => ({
+    query,
+    count: s.count,
+    zero: s.zero,
+    zeroPct: s.count > 0 ? Math.round((s.zero / s.count) * 100) : 0,
+    avgResults: s.count > 0 ? Math.round(s.sumResults / s.count) : 0,
+    lastAt: s.lastAt,
+  }));
+
+  return {
+    top: [...rows].sort((a, b) => b.count - a.count).slice(0, limit),
+    zeroResults: [...rows].filter(r => r.zero > 0).sort((a, b) => b.zero - a.zero).slice(0, limit),
+  };
+}
+
+// ---------- Popular candidates ----------
+export async function getPopularCandidates(days: number | "all" = 30, limit = 10) {
+  const { sinceIso } = periodRange(days);
+
+  // explore card clicks
+  const { data: clicks } = await supabase
+    .from("feed_events")
+    .select("establishment_id, event_type")
+    .like("event_type", "explore_card_click:%")
+    .gte("created_at", sinceIso);
+
+  const clicksByEst: Record<string, number> = {};
+  clicks?.forEach(c => {
+    if (!c.establishment_id) return;
+    clicksByEst[c.establishment_id] = (clicksByEst[c.establishment_id] ?? 0) + 1;
+  });
+
+  // check-ins
+  const { data: checkins } = await supabase
+    .from("check_ins")
+    .select("establishment_id")
+    .gte("created_at", sinceIso);
+  const checkinsByEst: Record<string, number> = {};
+  checkins?.forEach(c => {
+    if (!c.establishment_id) return;
+    checkinsByEst[c.establishment_id] = (checkinsByEst[c.establishment_id] ?? 0) + 1;
+  });
+
+  // reactions via posts
+  const { data: posts } = await supabase
+    .from("posts")
+    .select("id, establishment_id");
+  const postToEst: Record<string, string> = {};
+  posts?.forEach(p => { if (p.establishment_id) postToEst[p.id] = p.establishment_id; });
+  const { data: reactions } = await supabase
+    .from("user_reactions")
+    .select("post_id")
+    .gte("created_at", sinceIso);
+  const reactionsByEst: Record<string, number> = {};
+  reactions?.forEach(r => {
+    const est = postToEst[r.post_id];
+    if (!est) return;
+    reactionsByEst[est] = (reactionsByEst[est] ?? 0) + 1;
+  });
+
+  const ids = Array.from(new Set([
+    ...Object.keys(clicksByEst),
+    ...Object.keys(checkinsByEst),
+    ...Object.keys(reactionsByEst),
+  ]));
+
+  if (ids.length === 0) return [];
+
+  const { data: ests } = await supabase
+    .from("establishments")
+    .select("id, name, category, logo_url, image_url, slug, rating, total_reviews, is_popular")
+    .in("id", ids);
+
+  // normalization helpers
+  const maxC = Math.max(1, ...Object.values(clicksByEst));
+  const maxR = Math.max(1, ...Object.values(reactionsByEst));
+  const maxK = Math.max(1, ...Object.values(checkinsByEst));
+
+  return (ests ?? []).map(e => {
+    const c = clicksByEst[e.id] ?? 0;
+    const r = reactionsByEst[e.id] ?? 0;
+    const k = checkinsByEst[e.id] ?? 0;
+    const score = Math.round(((c / maxC) * 50 + (r / maxR) * 25 + (k / maxK) * 25));
+    let suggestion: "suggested" | "reevaluate" | null = null;
+    if (!e.is_popular && score >= 60) suggestion = "suggested";
+    if (e.is_popular && score < 20) suggestion = "reevaluate";
+    return {
+      id: e.id,
+      name: e.name,
+      slug: e.slug,
+      category: e.category,
+      image: e.image_url || e.logo_url,
+      rating: e.rating ?? 0,
+      total_reviews: e.total_reviews ?? 0,
+      is_popular: e.is_popular ?? false,
+      clicks: c,
+      reactions: r,
+      checkins: k,
+      score,
+      suggestion,
+    };
+  }).sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+// ---------- Experience metrics ----------
+export async function getExperiencesPerformance(days: number | "all" = 30) {
+  const { sinceIso } = periodRange(days);
+  const { data: exps } = await supabase
+    .from("experiences")
+    .select("*")
+    .order("sort_order");
+
+  const { data: events } = await supabase
+    .from("feed_events")
+    .select("event_type")
+    .or("event_type.like.experience_view:%,event_type.like.experience_click:%")
+    .gte("created_at", sinceIso);
+
+  const views: Record<string, number> = {};
+  const clicks: Record<string, number> = {};
+  events?.forEach(e => {
+    const { base, label } = splitEventLabel(e.event_type);
+    if (!label) return;
+    if (base === "experience_view") views[label] = (views[label] ?? 0) + 1;
+    if (base === "experience_click") clicks[label] = (clicks[label] ?? 0) + 1;
+  });
+
+  return (exps ?? []).map((e: any) => ({
+    ...e,
+    views: views[e.id] ?? 0,
+    clicks: clicks[e.id] ?? 0,
+    ctr: (views[e.id] ?? 0) > 0
+      ? Math.round((((clicks[e.id] ?? 0) / (views[e.id] ?? 1)) * 1000)) / 10
+      : 0,
+  }));
+}
+
+// ---------- Insights ----------
+export async function getExploreInsights(days: number | "all" = 7) {
+  const out: { type: "positive" | "warning" | "info"; message: string }[] = [];
+
+  const search = await getSearchInsights(days, 5);
+  if (search.zeroResults.length > 0) {
+    const top = search.zeroResults[0];
+    out.push({
+      type: "warning",
+      message: `${top.zero} busca(s) por "${top.query}" sem resultado — considere cadastrar.`,
+    });
+  }
+
+  const filters = await getExploreFilterUsage(days);
+  const topFilter = filters.find(f => f.count > 0);
+  if (topFilter) {
+    out.push({
+      type: "info",
+      message: `Filtro "${topFilter.label}" foi o mais usado (${topFilter.count}×) no período.`,
+    });
+  }
+
+  const cats = await getCategoryExplorePerformance(days);
+  const topCat = [...cats].sort((a, b) => b.clicks - a.clicks)[0];
+  if (topCat && topCat.clicks > 0 && topCat.pctReviews < 30) {
+    out.push({
+      type: "warning",
+      message: `Categoria "${topCat.category}" lidera em cliques mas só ${topCat.pctReviews}% têm avaliações.`,
+    });
+  }
+
+  return out.slice(0, 3);
+}

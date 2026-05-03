@@ -9,6 +9,7 @@ import { CouponCard } from "@/components/coupons/CouponCard";
 import { CATEGORIES, MOCK_ESTABLISHMENTS, MOCK_COUPONS, type Establishment } from "@/data/mock";
 import { getEstablishmentsByCategory } from "@/services/establishments";
 import { getAllCoupons } from "@/services/coupons";
+import { trackExplore } from "@/lib/exploreTracking";
 
 const CATEGORY_BANNERS: Record<string, string> = {
   "Restaurantes": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop",
@@ -72,6 +73,10 @@ export default function ExploreCategory() {
   const catIcon = CATEGORIES.find(c => c.label === selectedCategory);
   const CatIcon = isCoupons ? Ticket : catIcon?.icon;
   const filters = CATEGORY_FILTER_CHIPS[selectedCategory] || CATEGORY_FILTER_CHIPS["Restaurantes"];
+
+  useEffect(() => {
+    if (selectedCategory) trackExplore("explore_category_view", selectedCategory);
+  }, [selectedCategory]);
 
   useEffect(() => {
     if (isCoupons) {
