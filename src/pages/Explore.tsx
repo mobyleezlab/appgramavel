@@ -178,7 +178,7 @@ export default function Explore() {
                 {CATEGORIES.map(({ label, icon: Icon }) => (
                   <button
                     key={label}
-                    onClick={() => navigate(`/map/categoria/${encodeURIComponent(label)}`)}
+                    onClick={() => goToCategory(label)}
                     className="flex flex-col items-center justify-center gap-2 p-4 bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover hover:border-primary/30 transition-all duration-200"
                   >
                     <Icon className="w-5 h-5 text-primary" />
@@ -188,7 +188,7 @@ export default function Explore() {
               </div>
               <div className="flex justify-center mt-4">
                 <button
-                  onClick={() => navigate(`/map/categoria/${encodeURIComponent("Cupons")}`)}
+                  onClick={() => goToCategory("Cupons")}
                   className="flex flex-col items-center justify-center gap-2 p-4 bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover hover:border-primary/30 transition-all duration-200 w-[calc(33.333%-0.667rem)]"
                 >
                   <Ticket className="w-5 h-5 text-primary" />
@@ -206,7 +206,7 @@ export default function Explore() {
               <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
                 <div className="flex gap-4 pb-2">
                   {popularPlaces.map((place) => (
-                    <div key={place.id || place.name} className="shrink-0 w-[60%] rounded-xl overflow-hidden border border-border bg-card shadow-card cursor-pointer" onClick={() => navigate(`/estabelecimento/${place.slug}`)}>
+                    <div key={place.id || place.name} className="shrink-0 w-[60%] rounded-xl overflow-hidden border border-border bg-card shadow-card cursor-pointer" onClick={() => goToEstablishment(place.slug, "popular", place.id)}>
                       <div className="aspect-[3/2] overflow-hidden">
                         <img src={place.image_url} alt={place.name} className="w-full h-full object-cover" loading="lazy" />
                       </div>
@@ -236,7 +236,7 @@ export default function Explore() {
               <div className="overflow-x-auto scrollbar-hide -mx-4 px-4">
                 <div className="flex gap-4 pb-2">
                   {recommendedPlaces.map((place) => (
-                    <div key={place.id || place.name} className="shrink-0 w-[60%] rounded-xl overflow-hidden border border-border bg-card shadow-card cursor-pointer" onClick={() => navigate(`/estabelecimento/${place.slug}`)}>
+                    <div key={place.id || place.name} className="shrink-0 w-[60%] rounded-xl overflow-hidden border border-border bg-card shadow-card cursor-pointer" onClick={() => goToEstablishment(place.slug, "recomendado", place.id)}>
                       <div className="aspect-[3/2] overflow-hidden">
                         <img src={place.image_url} alt={place.name} className="w-full h-full object-cover" loading="lazy" />
                       </div>
@@ -281,7 +281,7 @@ export default function Explore() {
               <SectionTitle>Próximos de você</SectionTitle>
               <div className="space-y-4">
                 {nearbyPlaces.map((est) => (
-                  <Card key={est.id} className="cursor-pointer shadow-card hover:shadow-card-hover transition-shadow overflow-hidden" onClick={() => navigate(`/estabelecimento/${est.slug}`)}>
+                  <Card key={est.id} className="cursor-pointer shadow-card hover:shadow-card-hover transition-shadow overflow-hidden" onClick={() => goToEstablishment(est.slug, "nearby", est.id)}>
                     <div className="flex gap-4 p-4">
                       <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                         <img src={est.image_url} alt={est.name} className="w-full h-full object-cover" />
@@ -324,7 +324,7 @@ export default function Explore() {
                 </button>
               </div>
               {filteredEstablishments.map((est) => (
-                <Card key={est.id} className="cursor-pointer shadow-card hover:shadow-card-hover transition-shadow overflow-hidden" onClick={() => navigate(`/estabelecimento/${est.slug}`)}>
+                <Card key={est.id} className="cursor-pointer shadow-card hover:shadow-card-hover transition-shadow overflow-hidden" onClick={() => goToEstablishment(est.slug, "search", est.id)}>
                   <div className="flex gap-4 p-4">
                     <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
                       <img src={est.image_url} alt={est.name} className="w-full h-full object-cover" />
