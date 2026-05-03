@@ -14,6 +14,7 @@ import { fetchEstablishments, fetchExperiences, queryKeys } from "@/lib/queries"
 import { isOpenNow } from "@/lib/utils";
 import ExploreMap from "@/components/map/ExploreMap";
 import "@/components/map/map-styles.css";
+import { trackExplore } from "@/lib/exploreTracking";
 
 const FILTER_CHIPS = [
   { label: "Perto de você", icon: MapPin },
@@ -65,11 +66,27 @@ export default function Explore() {
 
   const isSearching = search.length > 0 || activeFilters.length > 0;
 
+  useEffect(() => {
+    trackExplore("explore_view");
+  }, []);
+
   const toggleFilter = (label: string) => {
-    setActiveFilters((prev) =>
-      prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label]
-    );
+    setActiveFilters((prev) => {
+      const next = prev.includes(label) ? prev.filter((f) => f !== label) : [...prev, label];
+      if (!prev.includes(label)) trackExplore("explore_filter", label);
+      return next;
+    });
     setShowMap(false);
+  };
+
+  const goToEstablishment = (slug: string, source: string, id?: string) => {
+    trackExplore("explore_card_click", source, { establishmentId: id ?? null });
+    navigate(`/estabelecimento/${slug}`);
+  };
+
+  const goToCategory = (label: string) => {
+    trackExplore("explore_category_click", label);
+    navigate(`/map/categoria/${encodeURIComponent(label)}`);
   };
 
   const filteredEstablishments = useMemo(() => {
