@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MOCK_ROUTES, MOCK_ESTABLISHMENTS, type RouteItem } from "@/data/mock";
 import { toast } from "sonner";
+import { trackRoute } from "@/lib/routesTracking";
 
 export default function RoteiroDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ export default function RoteiroDetail() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 800);
+    if (id) trackRoute("route_view", id);
     return () => clearTimeout(timer);
   }, [id]);
 
