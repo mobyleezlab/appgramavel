@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MOCK_ROUTES, MOCK_ESTABLISHMENTS, type RouteItem } from "@/data/mock";
 import { toast } from "sonner";
+import { trackRoute } from "@/lib/routesTracking";
 
 export default function RoteiroDetail() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ export default function RoteiroDetail() {
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 800);
+    if (id) trackRoute("route_view", id);
     return () => clearTimeout(timer);
   }, [id]);
 
@@ -171,7 +173,7 @@ export default function RoteiroDetail() {
             {!userStatus && (
               <Button
                 className="w-full rounded-full gap-2"
-                onClick={() => navigate(`/roteiros/${route.id}/navegar`)}
+                onClick={() => { if (id) trackRoute("route_start", id); navigate(`/roteiros/${route.id}/navegar`); }}
               >
                 <Navigation className="w-4 h-4" />
                 Iniciar roteiro
