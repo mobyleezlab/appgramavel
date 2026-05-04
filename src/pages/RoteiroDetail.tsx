@@ -173,7 +173,7 @@ export default function RoteiroDetail() {
             {!userStatus && (
               <Button
                 className="w-full rounded-full gap-2"
-                onClick={() => navigate(`/roteiros/${route.id}/navegar`)}
+                onClick={() => { if (id) trackRoute("route_start", id); navigate(`/roteiros/${route.id}/navegar`); }}
               >
                 <Navigation className="w-4 h-4" />
                 Iniciar roteiro
