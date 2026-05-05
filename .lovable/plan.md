@@ -1,97 +1,162 @@
 ## Situação atual
 
-`src/admin/pages/Routes.tsx` é uma tela passiva: lista os `routes` sugeridos com switch de destaque, lista banners e mostra um único insight ("mais completados"). Não permite **criar/editar roteiros**, não tem **paradas editáveis**, não mostra **engajamento real** (cliques, salvamentos, conclusões, taxa de abandono) e não há **personalização** por gosto do usuário. O app já consome `routes` + `route_stops` (tabelas com RLS de admin), e os usuários geram dados em `user_routes` / `user_route_stops` — fonte rica e ainda não explorada no admin.
+`src/admin/pages/Notifications.tsx` tem só duas abas: **Manual** (form simples: título/corpo/imagem/target) e **Histórico** (tabela básica com botão "Enviar"). O serviço (`adminNotifications.ts`) cria registro em `admin_notifications` e, ao enviar, faz fan-out copiando para `notifications` de cada usuário em `user_profiles`. Limitações:
+
+- Sem KPIs (alcance, leitura, CTR, falhas)
+- Sem segmentação real (apenas `all`)
+- Sem agendamento (`scheduled_at` existe na tabela mas não é usado)
+- Sem deep link configurável (campos `redirect_url`/`redirect_type` existem mas não são preenchidos)
+- Sem preview, sem templates, sem teste para si mesmo
+- Sem push real — só notificação in-app via tabela `notifications`
+- Histórico não mostra desempenho da notificação enviada
+- Sem padrão visual (Período, KPIs, Insights) das outras telas admin (Feed, Explore, Routes)
 
 ## O que vou construir
 
-Mesma estrutura visual do Admin Feed/Explore (seletor de período + grid de KPIs + cards), em 6 blocos:
+Mantendo o padrão visual do admin (Período + KPIs + cards):
 
-### 1. Cabeçalho com período (7 / 30 / 90 / Tudo)
-Idêntico ao padrão do Feed para consistência.
+### 1. Cabeçalho com seletor de período (7 / 30 / 90 / Tudo)
 
-### 2. KPIs (6 cards com delta vs. período anterior)
-- Roteiros sugeridos ativos (total `routes`)
-- Roteiros iniciados pelos usuários (`user_routes` no período)
-- Taxa de conclusão (% `completed` / iniciados)
-- Tempo médio para concluir (started_at → completed_at)
-- Roteiros personalizados criados (user_routes sem vínculo a `routes` sugerido)
-- Paradas visitadas via roteiro (check-ins disparados durante roteiro ativo)
+### 2. KPIs (6 cards com delta)
+- Notificações enviadas no período
+- Alcance total (linhas em `notifications` resultantes de envios admin)
+- Taxa de leitura (% `read=true` / alcance)
+- CTR — clique em deep link (instrumentado via `feed_events`: `notification_click:<id>`)
+- Agendadas pendentes (`scheduled_at > now() AND sent=false`)
+- Usuários ativos elegíveis (perfis com `last_seen_at` ≤ 30d)
 
-### 3. Performance dos Roteiros Sugeridos (substitui tabela atual)
-Tabela rica com:
-- Thumbnail + título + duração + dificuldade
-- Nº de paradas
-- **Iniciados** / **Concluídos** / **Taxa de conclusão**
-- **Abandonos** (status `in_progress` há >7 dias)
-- Switch destaque
-- Ações: **Editar** (abre Sheet), **Duplicar**, **Excluir**
+### 3. Composer (substitui "Manual") — Sheet/Card com layout 2 colunas
 
-### 4. Editor de Roteiros (NOVO — Sheet/dialog)
-Botão "+ Novo Roteiro" no cabeçalho do bloco 3. Sheet em 3 etapas espelhando o wizard do app, mas em layout desktop:
+**Coluna esquerda (formulário em seções)**:
+- **Conteúdo**: tipo (system/promo/badge/coupon/nearby/trending), título (máx 60), corpo (máx 180), upload de imagem (`establishments` bucket via `ImageUploadCrop`)
+- **Ação ao tocar**: select com opções
+  - Nenhuma
+  - Abrir tela interna (select de rotas: Feed, Explorar, Cupons, Roteiros, Estabelecimento específico, Cupom específico)
+  - Abrir URL externa
+  → preenche `redirect_type` + `redirect_url`
+- **Audiência**:
+  - Todos
+  - Por cidade (Gramado/Canela — usa `user_profiles.city`)
+  - Por engajamento (ativos 7d, ativos 30d, inativos 30d+)
+  - Por interesse (categorias com mais favoritos/check-ins do usuário — query em `user_favorites` + `check_ins`)
+  - Lista manual (multi-select com busca de usuários)
+  → preenchimento de `segment` + `target_ids[]`, mostra contagem **estimada** em tempo real
+- **Quando enviar**:
+  - Agora
+  - Agendar (date+time picker → grava `scheduled_at`)
+- **Canal** (chips):
+  - In-app (sempre)
+  - Push Web (se `web-push` habilitado — ver seção 7)
+- Botões: **Enviar teste para mim**, **Salvar rascunho**, **Agendar/Enviar**
 
-1. **Dados básicos**: título, subtítulo, descrição, duração, dificuldade (Fácil/Moderado/Difícil), ícone (lucide picker), upload de capa (`establishments` bucket, reaproveitando `ImageUploadCrop`), `is_featured`.
-2. **Paradas**: busca de estabelecimentos (mesma lista usada em Establishments), painel esquerdo = catálogo com filtro por categoria, painel direito = paradas selecionadas com **drag-and-drop** (`@dnd-kit/core` já presente) para definir `stop_order` e campo `note` por parada.
-3. **Revisão + publicar**: preview da ordem, mapa estático das paradas (mini Leaflet read-only), botão Salvar.
+**Coluna direita — Preview ao vivo**:
+- Mock do `NotificationsSheet` mobile com avatar/icon + título + corpo + tempo "agora" — atualiza enquanto digita
+- Avisos: "Título muito longo", "Sem ação configurada", "Audiência estimada: 312 usuários"
 
-Salva em transação: `routes` + `route_stops` (delete+insert no edit).
+### 4. Templates (NOVO)
+Card com 5-6 templates pré-prontos clicáveis que pré-preenchem o composer:
+- "Novo cupom disponível" (tipo coupon, deep link /coupons)
+- "Você tem badge novo" (tipo badge)
+- "Eventos no fim de semana" (promo, agenda)
+- "Lugar próximo a você" (nearby — usa segmento por cidade)
+- "Em alta esta semana" (trending, link Feed)
 
-### 5. Roteiros Personalizados dos Usuários (NOVO)
-Tabela read-only com `user_routes` no período:
-- Usuário (avatar + nome)
-- Título do roteiro personalizado
-- Nº de paradas / visitadas
-- Status (saved / in_progress / completed) com `StatusBadge`
-- Data criação / conclusão
-- Ação: "Promover a sugerido" → cria um `routes` espelho com mesmas paradas
+Salvos em `admin_notifications` como rascunhos com flag `type='template'` (reusa tabela existente, sem migration).
 
-Insight extra: as **combinações de categorias** mais escolhidas pelos usuários (ex: "Café + Mirante + Restaurante" — 18 vezes), surfacing oportunidades de roteiros oficiais.
+### 5. Histórico com performance (substitui tabela atual)
+Tabela rica:
+- Imagem mini + título
+- Tipo (StatusBadge colorido)
+- Audiência (texto: "Todos · 1.240" / "Gramado · 312")
+- Status: Rascunho / Agendada (com data) / Enviando / Enviada / Falhou
+- **Alcance / Lidas / CTR** (3 colunas com %)
+- Agendada para / Enviada em
+- Ações: **Ver detalhes**, **Duplicar**, **Cancelar agendamento**, **Reenviar para não-lidos**, **Excluir**
 
-### 6. Sugestões Personalizadas por Gosto (NOVO — engine simples)
-Card com **roteiros sugeridos automaticamente** baseados em sinais reais:
-- Top categorias por cliques/check-ins/favoritos no período
-- Estabelecimentos com maior score (cliques + reações + reviews)
-- Agrupa por proximidade geográfica (≤2km entre paradas) usando lat/lng
-- Output: 3 sugestões prontas ("Tour Cafés Especiais — Centro de Gramado", 4 paradas) com botão **"Criar este roteiro"** que abre o editor pré-preenchido
+### 6. Drawer "Detalhes da Notificação"
+Ao clicar em uma linha:
+- Preview real
+- Métricas: alcance, lidos, cliques, % por hora desde o envio (sparkline simples)
+- Lista paginada dos destinatários com status (Lida/Não lida/Clicou)
 
-### 7. Banners de Destaque (mantém atual + melhorias)
-- Adicionar **upload de imagem**, vínculo opcional a `routes` (FK `route_id` já existe), reorder via drag-and-drop e contador de cliques (instrumentar `track('route_banner_click', { id })` em `Roteiros.tsx`).
+### 7. Push Web (opcional, com fallback gracioso)
 
-### 8. Insights Automáticos (card final)
-2-3 frases dinâmicas, ex.:
-- "Roteiro X tem 80% de abandono — revise duração ou paradas."
-- "12 usuários criaram roteiros com 'Cafés + Mirantes' — considere oficializar."
-- "Roteiro Y nunca foi iniciado nos últimos 30 dias."
+**Mobile app (PWA)**:
+- Hook `usePushSubscription` que pede permissão (`Notification.requestPermission()`), registra Service Worker (`/sw.js` já existe) e cria PushSubscription com VAPID public key
+- Salva subscription em nova tabela `push_subscriptions` (user_id, endpoint, p256dh, auth, user_agent, created_at) — **única migration necessária**
+- Componente `PushOptIn` em Configurações: switch "Receber notificações" + estado (granted/denied/default)
+- Service Worker (`public/sw.js`): handler `push` que mostra notificação e `notificationclick` que abre `redirect_url`
+
+**Backend (Edge Function nova `send-push`)**:
+- Input: `{ admin_notification_id }`
+- Busca destinatários conforme segmento, suas `push_subscriptions`, dispara via biblioteca `web-push` com `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (secrets a configurar)
+- Atualiza `admin_notifications.sent_at`, conta entregas/falhas
+- Mantém in-app insert (atual) em paralelo
+
+**Admin**:
+- Banner no topo se VAPID secrets ausentes: "Push Web não configurado. Configure VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY para habilitar."
+- Se ausente, canal "Push Web" fica desabilitado e composer roda só in-app — **tudo funciona sem push**
+
+### 8. Agendador (Edge Function `process-scheduled-notifications`)
+- Roda via cron (Supabase scheduled function ou trigger manual via Settings)
+- Busca `admin_notifications` com `scheduled_at <= now() AND sent=false`
+- Chama `sendNotification` (in-app) + `send-push` (se aplicável)
+
+### 9. Insights automáticos (card final)
+2-3 frases dinâmicas:
+- "Notificações tipo 'coupon' têm 2,3× mais cliques que 'system'."
+- "Melhor janela de envio: 18h–20h (CTR 14%)."
+- "12% dos usuários ativos não têm push habilitado — considere campanha de opt-in."
+
+### 10. Instrumentação
+- `notification_open:<id>` quando o sheet abre uma notificação
+- `notification_click:<id>` no `handleClick` em `NotificationsSheet.tsx`
+- Push: `notification_push_click:<id>` no SW
 
 ## Mudanças técnicas
 
-### Instrumentação no app (`src/pages/Roteiros.tsx`, `RoteiroDetail.tsx`, `RoteiroNavigation.tsx`)
-Eventos via `feed_events` (mesmo padrão do Explore):
-- `route_view:<route_id>`, `route_start:<route_id>`, `route_complete:<route_id>`, `route_banner_click:<id>`, `route_stop_visited:<route_id>`
-
-Sem alteração visual.
-
-### `src/admin/services/adminRoutes.ts` (NOVO)
-- `listRoutesPerformance(period)` — joins `routes` + `route_stops` + agregação `user_routes` por título
-- `listUserRoutes(period)` — `user_routes` + `user_route_stops` + perfil
-- `createRoute(payload, stops[])` / `updateRoute(id, payload, stops[])` / `deleteRoute(id)` / `duplicateRoute(id)`
-- `promoteUserRouteToSuggested(user_route_id)`
-- `getPersonalizedSuggestions(period)` — algoritmo de score+proximidade
-- `getRouteKPIs(period)` com deltas
-- `getRouteAdminInsights(period)` — gera as frases
-
-### `src/admin/pages/Routes.tsx` — reescrita
-Layout desktop:
-```text
-[ Período ]
-[ KPI ][ KPI ][ KPI ][ KPI ][ KPI ][ KPI ]
-[ Performance dos Roteiros (full)            ]   [+ Novo]
-[ Sugestões personalizadas ][ Insights        ]
-[ Roteiros dos usuários (full)                ]
-[ Banners (com upload + reorder)              ]
+### Schema (1 migration)
+```sql
+create table public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  user_agent text,
+  created_at timestamptz default now()
+);
+alter table public.push_subscriptions enable row level security;
+-- policies: user gerencia o próprio; admin lê tudo
 ```
 
-### Sem mudanças no schema
-Reusa `routes`, `route_stops`, `user_routes`, `user_route_stops`, `feed_events`, `route_banners`. Nenhuma migration necessária.
+Reusa colunas existentes em `admin_notifications`: `scheduled_at`, `sent`, `sent_at`, `target`, `segment`, `target_ids`, `redirect_url`, `redirect_type`, `image_url`, `reference_id`, `type`.
 
-### Sem alterações no app mobile
-Apenas adição de chamadas `track()` (sem mudança visual).
+### Arquivos
+- `src/admin/pages/Notifications.tsx` — reescrita
+- `src/admin/services/adminNotifications.ts` — novos métodos: `getNotificationKPIs`, `getNotificationPerformance(id)`, `estimateAudience(segment, target_ids)`, `scheduleNotification`, `cancelScheduled`, `duplicateNotification`, `resendToUnread(id)`, `getNotificationInsights`
+- `src/admin/components/NotificationComposer.tsx` (novo) — formulário 2 colunas
+- `src/admin/components/NotificationPreview.tsx` (novo) — mock mobile
+- `src/admin/components/NotificationDetailsDrawer.tsx` (novo)
+- `src/lib/notificationsTracking.ts` (novo) — `trackNotification(event, id)`
+- `src/components/layout/NotificationsSheet.tsx` — adicionar tracking
+- `src/services/pushSubscriptions.ts` (novo) — opt-in/opt-out
+- `src/pages/profile/Settings.tsx` — adicionar `PushOptIn`
+- `public/sw.js` — handlers `push` + `notificationclick`
+- `supabase/functions/send-push/index.ts` (nova edge function)
+- `supabase/functions/process-scheduled-notifications/index.ts` (nova edge function)
+- Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (pedir ao usuário gerar; documentar com `npx web-push generate-vapid-keys`)
+
+### Sem alteração visual no app mobile
+Apenas adição do toggle de push em Configurações + tracking. Notificações in-app continuam idênticas.
+
+## Layout final do admin
+
+```text
+[ Período: 7 / 30 / 90 / Tudo ]
+[ KPI ][ KPI ][ KPI ][ KPI ][ KPI ][ KPI ]
+[ Composer 2-col (form | preview)        ] [+ Nova]
+[ Templates (chips de cards)             ]
+[ Histórico com performance (full)       ]
+[ Insights automáticos                   ]
+```
