@@ -50,6 +50,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
 
   useEffect(() => {
     if (!open) return;
+    trackNotification("notification_open");
     async function load() {
       setLoading(true);
       const userId = await getCurrentUserId();
