@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserId } from "@/lib/auth";
+import { trackNotification } from "@/lib/notificationsTracking";
 import type { ComponentType } from "react";
 
 interface NotificationData {
@@ -73,12 +74,11 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
   }, [open, onOpenChange]);
 
   const handleClick = async (n: NotificationData) => {
-    // Mark as read
     if (!n.read) {
       await supabase.from("notifications").update({ read: true }).eq("id", n.id);
       setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
-    // Navigate
+    trackNotification("notification_click", n.id);
     if (n.redirect_url) {
       onOpenChange(false);
       if (n.redirect_type === "external") {
