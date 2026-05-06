@@ -1,162 +1,128 @@
-## Situação atual
+## Diagnóstico
 
-`src/admin/pages/Notifications.tsx` tem só duas abas: **Manual** (form simples: título/corpo/imagem/target) e **Histórico** (tabela básica com botão "Enviar"). O serviço (`adminNotifications.ts`) cria registro em `admin_notifications` e, ao enviar, faz fan-out copiando para `notifications` de cada usuário em `user_profiles`. Limitações:
+### Dashboard (`src/admin/pages/Dashboard.tsx`)
+Hoje é uma tela "olá mundo": 6 contadores totais sem contexto temporal e um card placeholder ("Painel de atividade em tempo real será exibido aqui"). Problemas:
+- Nenhum delta, tendência ou comparação entre períodos
+- Não diferencia o que é importante (KPI primário) do que é estrutural (contagem total)
+- Sem séries temporais, sem distribuição por cidade, sem alertas
+- Não conversa com o trabalho já feito em Feed/Explore/Routes/Notifications (que têm seletor de período + KPIs + insights)
+- "Atividade Recente" está vazia, mesmo já existindo dados em `feed_events`, `check_ins`, `reviews`, `posts`, `notifications`
+- Grid `grid-cols-3` quebra com 6 itens no desktop largo (2 linhas com sobra)
+- Sem navegação contextual: clicar num card não leva para a seção correspondente
 
-- Sem KPIs (alcance, leitura, CTR, falhas)
-- Sem segmentação real (apenas `all`)
-- Sem agendamento (`scheduled_at` existe na tabela mas não é usado)
-- Sem deep link configurável (campos `redirect_url`/`redirect_type` existem mas não são preenchidos)
-- Sem preview, sem templates, sem teste para si mesmo
-- Sem push real — só notificação in-app via tabela `notifications`
-- Histórico não mostra desempenho da notificação enviada
-- Sem padrão visual (Período, KPIs, Insights) das outras telas admin (Feed, Explore, Routes)
+### Estabelecimentos (`src/admin/pages/Establishments.tsx`)
+É um CRUD funcional, mas raso para o que esta entidade representa no app:
+- Sem KPIs do catálogo (total ativos/inativos, sem foto, sem coordenadas, sem horário, sem cupom, rating médio, % populares)
+- Filtros pobres: só categoria + busca por nome. Falta cidade, status (aberto/fechado), popular, com/sem cupom, com/sem foto, faixa de rating, ordenação (mais visualizados, melhor avaliado, recente)
+- Tabela sem ordenação por coluna, sem paginação, sem seleção em massa
+- Sem performance por estabelecimento (impressões / cliques / CTR / favoritos / check-ins / avaliações / cupons usados) — dados que já existem em `feed_events`, `user_favorites`, `check_ins`, `reviews`, `coupon_redemptions`
+- Ações por linha limitadas a editar/excluir. Falta: duplicar, abrir no app (preview), ativar/desativar, marcar popular, ver analytics
+- Sem detecção de problemas de qualidade (estabelecimentos sem coordenadas, sem foto, sem horário, sem categoria, com rating < 3, sem nenhuma impressão no período)
+- `category` está hardcoded em string PT-BR, sem normalização — quebra quando o catálogo cresce
+- Sem indicador visual rápido de saúde (badges de "incompleto", "sem foto", "sem coords")
+- Imagem 40×40 sem alt acessível claro; sem fallback semântico
 
 ## O que vou construir
 
-Mantendo o padrão visual do admin (Período + KPIs + cards):
-
-### 1. Cabeçalho com seletor de período (7 / 30 / 90 / Tudo)
-
-### 2. KPIs (6 cards com delta)
-- Notificações enviadas no período
-- Alcance total (linhas em `notifications` resultantes de envios admin)
-- Taxa de leitura (% `read=true` / alcance)
-- CTR — clique em deep link (instrumentado via `feed_events`: `notification_click:<id>`)
-- Agendadas pendentes (`scheduled_at > now() AND sent=false`)
-- Usuários ativos elegíveis (perfis com `last_seen_at` ≤ 30d)
-
-### 3. Composer (substitui "Manual") — Sheet/Card com layout 2 colunas
-
-**Coluna esquerda (formulário em seções)**:
-- **Conteúdo**: tipo (system/promo/badge/coupon/nearby/trending), título (máx 60), corpo (máx 180), upload de imagem (`establishments` bucket via `ImageUploadCrop`)
-- **Ação ao tocar**: select com opções
-  - Nenhuma
-  - Abrir tela interna (select de rotas: Feed, Explorar, Cupons, Roteiros, Estabelecimento específico, Cupom específico)
-  - Abrir URL externa
-  → preenche `redirect_type` + `redirect_url`
-- **Audiência**:
-  - Todos
-  - Por cidade (Gramado/Canela — usa `user_profiles.city`)
-  - Por engajamento (ativos 7d, ativos 30d, inativos 30d+)
-  - Por interesse (categorias com mais favoritos/check-ins do usuário — query em `user_favorites` + `check_ins`)
-  - Lista manual (multi-select com busca de usuários)
-  → preenchimento de `segment` + `target_ids[]`, mostra contagem **estimada** em tempo real
-- **Quando enviar**:
-  - Agora
-  - Agendar (date+time picker → grava `scheduled_at`)
-- **Canal** (chips):
-  - In-app (sempre)
-  - Push Web (se `web-push` habilitado — ver seção 7)
-- Botões: **Enviar teste para mim**, **Salvar rascunho**, **Agendar/Enviar**
-
-**Coluna direita — Preview ao vivo**:
-- Mock do `NotificationsSheet` mobile com avatar/icon + título + corpo + tempo "agora" — atualiza enquanto digita
-- Avisos: "Título muito longo", "Sem ação configurada", "Audiência estimada: 312 usuários"
-
-### 4. Templates (NOVO)
-Card com 5-6 templates pré-prontos clicáveis que pré-preenchem o composer:
-- "Novo cupom disponível" (tipo coupon, deep link /coupons)
-- "Você tem badge novo" (tipo badge)
-- "Eventos no fim de semana" (promo, agenda)
-- "Lugar próximo a você" (nearby — usa segmento por cidade)
-- "Em alta esta semana" (trending, link Feed)
-
-Salvos em `admin_notifications` como rascunhos com flag `type='template'` (reusa tabela existente, sem migration).
-
-### 5. Histórico com performance (substitui tabela atual)
-Tabela rica:
-- Imagem mini + título
-- Tipo (StatusBadge colorido)
-- Audiência (texto: "Todos · 1.240" / "Gramado · 312")
-- Status: Rascunho / Agendada (com data) / Enviando / Enviada / Falhou
-- **Alcance / Lidas / CTR** (3 colunas com %)
-- Agendada para / Enviada em
-- Ações: **Ver detalhes**, **Duplicar**, **Cancelar agendamento**, **Reenviar para não-lidos**, **Excluir**
-
-### 6. Drawer "Detalhes da Notificação"
-Ao clicar em uma linha:
-- Preview real
-- Métricas: alcance, lidos, cliques, % por hora desde o envio (sparkline simples)
-- Lista paginada dos destinatários com status (Lida/Não lida/Clicou)
-
-### 7. Push Web (opcional, com fallback gracioso)
-
-**Mobile app (PWA)**:
-- Hook `usePushSubscription` que pede permissão (`Notification.requestPermission()`), registra Service Worker (`/sw.js` já existe) e cria PushSubscription com VAPID public key
-- Salva subscription em nova tabela `push_subscriptions` (user_id, endpoint, p256dh, auth, user_agent, created_at) — **única migration necessária**
-- Componente `PushOptIn` em Configurações: switch "Receber notificações" + estado (granted/denied/default)
-- Service Worker (`public/sw.js`): handler `push` que mostra notificação e `notificationclick` que abre `redirect_url`
-
-**Backend (Edge Function nova `send-push`)**:
-- Input: `{ admin_notification_id }`
-- Busca destinatários conforme segmento, suas `push_subscriptions`, dispara via biblioteca `web-push` com `VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` (secrets a configurar)
-- Atualiza `admin_notifications.sent_at`, conta entregas/falhas
-- Mantém in-app insert (atual) em paralelo
-
-**Admin**:
-- Banner no topo se VAPID secrets ausentes: "Push Web não configurado. Configure VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY para habilitar."
-- Se ausente, canal "Push Web" fica desabilitado e composer roda só in-app — **tudo funciona sem push**
-
-### 8. Agendador (Edge Function `process-scheduled-notifications`)
-- Roda via cron (Supabase scheduled function ou trigger manual via Settings)
-- Busca `admin_notifications` com `scheduled_at <= now() AND sent=false`
-- Chama `sendNotification` (in-app) + `send-push` (se aplicável)
-
-### 9. Insights automáticos (card final)
-2-3 frases dinâmicas:
-- "Notificações tipo 'coupon' têm 2,3× mais cliques que 'system'."
-- "Melhor janela de envio: 18h–20h (CTR 14%)."
-- "12% dos usuários ativos não têm push habilitado — considere campanha de opt-in."
-
-### 10. Instrumentação
-- `notification_open:<id>` quando o sheet abre uma notificação
-- `notification_click:<id>` no `handleClick` em `NotificationsSheet.tsx`
-- Push: `notification_push_click:<id>` no SW
-
-## Mudanças técnicas
-
-### Schema (1 migration)
-```sql
-create table public.push_subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  endpoint text not null unique,
-  p256dh text not null,
-  auth text not null,
-  user_agent text,
-  created_at timestamptz default now()
-);
-alter table public.push_subscriptions enable row level security;
--- policies: user gerencia o próprio; admin lê tudo
-```
-
-Reusa colunas existentes em `admin_notifications`: `scheduled_at`, `sent`, `sent_at`, `target`, `segment`, `target_ids`, `redirect_url`, `redirect_type`, `image_url`, `reference_id`, `type`.
-
-### Arquivos
-- `src/admin/pages/Notifications.tsx` — reescrita
-- `src/admin/services/adminNotifications.ts` — novos métodos: `getNotificationKPIs`, `getNotificationPerformance(id)`, `estimateAudience(segment, target_ids)`, `scheduleNotification`, `cancelScheduled`, `duplicateNotification`, `resendToUnread(id)`, `getNotificationInsights`
-- `src/admin/components/NotificationComposer.tsx` (novo) — formulário 2 colunas
-- `src/admin/components/NotificationPreview.tsx` (novo) — mock mobile
-- `src/admin/components/NotificationDetailsDrawer.tsx` (novo)
-- `src/lib/notificationsTracking.ts` (novo) — `trackNotification(event, id)`
-- `src/components/layout/NotificationsSheet.tsx` — adicionar tracking
-- `src/services/pushSubscriptions.ts` (novo) — opt-in/opt-out
-- `src/pages/profile/Settings.tsx` — adicionar `PushOptIn`
-- `public/sw.js` — handlers `push` + `notificationclick`
-- `supabase/functions/send-push/index.ts` (nova edge function)
-- `supabase/functions/process-scheduled-notifications/index.ts` (nova edge function)
-- Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (pedir ao usuário gerar; documentar com `npx web-push generate-vapid-keys`)
-
-### Sem alteração visual no app mobile
-Apenas adição do toggle de push em Configurações + tracking. Notificações in-app continuam idênticas.
-
-## Layout final do admin
+### Dashboard (reescrita seguindo padrão admin)
 
 ```text
 [ Período: 7 / 30 / 90 / Tudo ]
-[ KPI ][ KPI ][ KPI ][ KPI ][ KPI ][ KPI ]
-[ Composer 2-col (form | preview)        ] [+ Nova]
-[ Templates (chips de cards)             ]
-[ Histórico com performance (full)       ]
-[ Insights automáticos                   ]
+
+[ Hero KPIs primários ]
+[ Usuários ativos | Sessões Explorar | Cliques no Feed | Check-ins | Cupons resgatados | Novos cadastros ]
+   (cada um com delta vs período anterior + sparkline mini)
+
+[ Saúde do catálogo (card largo)               ] [ Atividade ao vivo (card lateral)          ]
+[ • Estabelecimentos sem foto: 4               ] [ últimos eventos: novo cadastro,           ]
+[ • Sem coordenadas: 2                         ] [ check-in, avaliação, post, redenção       ]
+[ • Sem horário: 7                             ]                                              
+[ • Sem categoria: 1                           ]
+[ • Cupons expirando em 7d: 3                  ]
+[ → cada linha vira link para o filtro correspondente em /admin/estabelecimentos | /admin/cupons ]
+
+[ Engajamento ao longo do tempo (LineChart impressions vs clicks vs check-ins) ]
+
+[ Distribuição por cidade   ] [ Top 5 estabelecimentos no período          ]
+[ Donut Gramado/Canela/...  ] [ logo + nome + impressões + CTR             ]
+
+[ Insights automáticos (até 3 frases)                                                  ]
+[ "Quinta tem 38% mais cliques que a média" / "Categoria Cafés cresceu 22%" / etc.    ]
+
+[ Atalhos de ação rápida ]
+[ + Novo estabelecimento ] [ + Novo cupom ] [ + Nova notificação ] [ + Novo roteiro ]
 ```
+
+Tudo navegável: cards com `onClick` que direcionam para a página/filtro correspondente. Reusa funções já existentes em `adminAnalytics.ts` (`getFeedKPIs`, `getExploreKPIs`, `getEngagementByWeekday`, `getTopEstablishmentsInFeed`) + novos helpers para "saúde do catálogo" e "atividade ao vivo".
+
+### Estabelecimentos (upgrade para gestão e analytics)
+
+```text
+[ Período: 7 / 30 / 90 / Tudo ]                       [ + Novo estabelecimento ]
+
+[ KPIs do catálogo ]
+[ Total ativos | Rating médio | Com cupom | Populares | Incompletos | Sem impressão no período ]
+
+[ Toolbar avançada ]
+[ Busca | Categoria | Cidade | Status | Qualidade ▾ | Ordenar por ▾ | Visualização: Lista | Mapa ]
+   (Qualidade: sem foto, sem coords, sem horário, rating < 3, sem cupom)
+   (Ordenar: nome, mais visualizado, melhor avaliado, mais favoritado, mais check-ins, recente)
+
+[ Ações em massa quando há seleção: Ativar | Desativar | Marcar popular | Excluir ]
+
+[ Tabela enriquecida com colunas ordenáveis ]
+[ ☐ | Img | Nome (+ slug) | Categoria | Cidade | Rating | Status | Saúde | Impressões | CTR | Favoritos | Check-ins | Ações ]
+   (badges Saúde: ✓ Completo / ⚠ Sem foto / ⚠ Sem coords / ⚠ Sem horário)
+   (Ações: Editar, Ver no app, Duplicar, Toggle popular, Excluir)
+
+[ Paginação 25/50/100 + total ]
+
+[ Drawer "Detalhes & Performance" ao clicar na linha ]
+   • Header: foto + nome + categoria + status + rating
+   • KPIs do período: impressões, cliques, CTR, favoritos novos, check-ins, avaliações novas, cupons resgatados
+   • Mini-chart de impressões por dia
+   • Última atividade (últimos 5 eventos)
+   • Botões: Editar / Ver no app / Duplicar / Excluir
+
+[ Insights do catálogo (card final) ]
+   "3 estabelecimentos sem impressão há 30d", "Cafés tem o maior CTR (8,2%)", etc.
+```
+
+Visualização "Mapa" (toggle): Leaflet com pins coloridos por status (verde = ativo+saudável, amarelo = incompleto, cinza = inativo). Reusa `LocationMap`/Leaflet já no projeto.
+
+## Mudanças técnicas
+
+### Sem migrations
+Usa apenas tabelas e colunas existentes: `establishments`, `feed_events`, `user_favorites`, `check_ins`, `reviews`, `coupon_redemptions`, `coupons`, `user_profiles`, `notifications`.
+
+### Arquivos
+- `src/admin/services/adminDashboard.ts` (novo)
+  - `getDashboardKPIs(period)` — usuários ativos, sessões Explorar, cliques Feed, check-ins, cupons resgatados, novos cadastros (com deltas)
+  - `getCatalogHealth()` — contagens de estabelecimentos sem foto / sem coords / sem horário / sem categoria + cupons expirando
+  - `getRecentActivity(limit)` — merge de eventos recentes (cadastro, check-in, avaliação, post, redenção)
+  - `getCityDistribution()` — usuários e estabelecimentos por cidade
+  - `getDashboardInsights(period)` — 2-3 frases automáticas
+- `src/admin/services/adminEstablishments.ts` (novo)
+  - `getEstablishmentsKPIs(period)`
+  - `listEstablishments({ search, category, city, status, quality, sortBy, page, pageSize })`
+  - `getEstablishmentPerformance(id, period)` — métricas para o drawer
+  - `getEstablishmentInsights(period)`
+  - `bulkUpdate(ids, patch)` / `duplicateEstablishment(id)` / `togglePopular(id)`
+- `src/admin/pages/Dashboard.tsx` — reescrita
+- `src/admin/pages/Establishments.tsx` — reescrita
+- `src/admin/components/EstablishmentDetailsDrawer.tsx` (novo)
+- `src/admin/components/EstablishmentMapView.tsx` (novo, opcional, reusa Leaflet)
+- `src/admin/components/PeriodSelector.tsx` — extrair se ainda não estiver isolado, para reuso
+
+### Padrão visual mantido
+Mesmo header com seletor de período, `StatCard` com delta, `StatusBadge`, cards `bg-card border rounded-lg`, espaçamento `space-y-6`, grid responsivo. Admin segue desktop-only (`min-w-[1024px]`). Sem mudanças no app mobile.
+
+### Performance
+- Queries agregadas em paralelo com `Promise.all`
+- Paginação server-side em estabelecimentos
+- Cache em memória do período (recarrega só quando muda)
+
+## Resultado
+
+- **Dashboard** vira o "cockpit" real do admin: estado de saúde, tendência, atividade ao vivo, insights e atalhos.
+- **Estabelecimentos** vira ferramenta de gestão e analytics, não só CRUD: filtros ricos, ordenação, qualidade do catálogo, drawer com performance individual, ações em massa e visualização em mapa.
