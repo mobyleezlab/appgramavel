@@ -22,7 +22,7 @@ export type EstRow = Tables<"establishments"> & {
   health: { complete: boolean; issues: string[] };
 };
 
-function computeHealth(e: Tables<"establishments">): EstRow["health"] {
+function computeHealth(e: Pick<Tables<"establishments">, "image_url" | "logo_url" | "latitude" | "longitude" | "opening_hours" | "hours_monday" | "category">): EstRow["health"] {
   const issues: string[] = [];
   if (!e.image_url && !e.logo_url) issues.push("Sem foto");
   if (e.latitude == null || e.longitude == null) issues.push("Sem coords");
