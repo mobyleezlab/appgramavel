@@ -22,6 +22,7 @@ const Coupons = lazy(() => import("./pages/Coupons"));
 const Roteiros = lazy(() => import("./pages/Roteiros"));
 const RoteiroDetail = lazy(() => import("./pages/RoteiroDetail"));
 const RoteiroNavigation = lazy(() => import("./pages/RoteiroNavigation"));
+const RoteiroEditor = lazy(() => import("./pages/RoteiroEditor"));
 const Establishment = lazy(() => import("./pages/Establishment"));
 const SavedPlaces = lazy(() => import("./pages/profile/SavedPlaces"));
 const CheckInsPage = lazy(() => import("./pages/profile/CheckIns"));
@@ -100,6 +101,8 @@ const App = () => (
                       <Route path="/map/categoria/:category" element={<ProtectedRoute><ExploreCategory /></ProtectedRoute>} />
                       <Route path="/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
                       <Route path="/roteiros" element={<ProtectedRoute><Roteiros /></ProtectedRoute>} />
+                      <Route path="/roteiros/novo" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
+                      <Route path="/roteiros/:id/editar" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
                       <Route path="/roteiros/:id" element={<ProtectedRoute><RoteiroDetail /></ProtectedRoute>} />
                       <Route path="/roteiros/:id/navegar" element={<ProtectedRoute><RoteiroNavigation /></ProtectedRoute>} />
                       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

@@ -1,57 +1,65 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronRight, Clock, MapPin, Star, Mountain, Navigation, Edit3, CheckCircle2, RotateCcw, Play, Image as ImageIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Clock, MapPin, Mountain, CheckCircle2, RotateCcw, Play, Navigation, Sparkles, Edit3 } from "lucide-react";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MOCK_ROUTES, MOCK_ESTABLISHMENTS, type RouteItem } from "@/data/mock";
+import RoutePreviewMap from "@/components/routes/RoutePreviewMap";
+import { HowToGetThereButton } from "@/components/routes/HowToGetThereButton";
+import { useCloneSuggestedRoute, useMyRoute, useStartRoute, useSuggestedRoute } from "@/hooks/useRoutes";
+import { getMultiLegRoute, formatKm, formatMin } from "@/lib/routeEstimates";
 import { toast } from "sonner";
-import { trackRoute } from "@/lib/routesTracking";
 
 export default function RoteiroDetail() {
   const { id } = useParams<{ id: string }>();
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const navState = location.state as { userStatus?: "in_progress" | "completed"; completedStops?: number } | null;
-  const userStatus = navState?.userStatus;
-  const completedStops = navState?.completedStops ?? 0;
-  const [loading, setLoading] = useState(true);
+  const isUser = params.get("type") === "user";
+
+  const suggested = useSuggestedRoute(!isUser ? id : undefined);
+  const mine = useMyRoute(isUser ? id : undefined);
+  const startRoute = useStartRoute();
+  const clone = useCloneSuggestedRoute();
+
+  const route: any = isUser ? mine.data : suggested.data;
+  const loading = isUser ? mine.isLoading : suggested.isLoading;
+
+  const stops = useMemo(() => {
+    if (!route) return [];
+    const list = isUser ? route.user_route_stops : route.route_stops;
+    return (list ?? [])
+      .slice()
+      .sort((a: any, b: any) => a.stop_order - b.stop_order)
+      .map((s: any) => ({ ...s, establishment: s.establishment }));
+  }, [route, isUser]);
+
+  const validStops = stops.filter((s: any) => s.establishment?.latitude != null);
+  const visitedCount = isUser ? stops.filter((s: any) => s.visited).length : 0;
+
+  const [estimate, setEstimate] = useState<{ km: number; min: number; coords: [number, number][] } | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    if (id) trackRoute("route_view", id);
-    return () => clearTimeout(timer);
-  }, [id]);
-
-  const route = MOCK_ROUTES.find(r => r.id === id);
+    if (validStops.length < 2) return;
+    const points = validStops.map((s: any) => ({ lat: s.establishment.latitude, lng: s.establishment.longitude }));
+    getMultiLegRoute(points).then((r) => {
+      if (r) setEstimate({ km: r.totalDistanceKm, min: r.totalDurationMin, coords: r.fullCoordinates });
+    });
+  }, [validStops.length]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pt-14">
         <GlobalHeader showBack />
-        <main className="max-w-2xl mx-auto pb-20 pt-20">
-          <Skeleton className="w-full aspect-[2/1] rounded-b-3xl" />
-          <div className="px-4 pt-6 space-y-6">
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-3/4 rounded-full" />
-              <div className="flex gap-2">
-                <Skeleton className="h-5 w-20 rounded-full" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-            </div>
-            <Skeleton className="h-20 w-full rounded-2xl" />
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-40 rounded-full" />
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 w-full rounded-2xl" />
-              ))}
-            </div>
+        <main className="max-w-2xl mx-auto pb-20">
+          <Skeleton className="aspect-[2/1]" />
+          <div className="px-4 pt-4 space-y-3">
+            <Skeleton className="h-8 w-2/3" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-48 w-full rounded-xl" />
           </div>
         </main>
-        <BottomNav />
       </div>
     );
   }
@@ -64,124 +72,184 @@ export default function RoteiroDetail() {
     );
   }
 
-  const getEstablishmentForStop = (stopName: string) => {
-    return MOCK_ESTABLISHMENTS.find(e => e.name === stopName);
+  const cover = isUser
+    ? route.cover_url || stops[0]?.establishment?.image_url
+    : route.image_url;
+  const userStatus: "saved" | "in_progress" | "completed" | undefined = isUser
+    ? route.status
+    : undefined;
+
+  const handleStart = async () => {
+    if (isUser && id) {
+      try { await startRoute.mutateAsync(id); } catch { /* ok */ }
+      navigate(`/roteiros/${id}/navegar?type=user`);
+    } else {
+      navigate(`/roteiros/${id}/navegar`);
+    }
+  };
+
+  const handlePersonalize = async () => {
+    if (!id) return;
+    try {
+      const newId = await clone.mutateAsync(id);
+      toast.success("Roteiro adicionado aos seus");
+      if (newId) navigate(`/roteiros/${newId}/editar`);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Não foi possível clonar");
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <GlobalHeader onBack={() => navigate("/roteiros")} showBack />
+      <GlobalHeader showBack onBack={() => navigate("/roteiros")} />
 
-      <main className="max-w-2xl mx-auto pb-20">
-        {/* Hero banner */}
+      <main className="max-w-2xl mx-auto pb-32">
+        {/* Hero */}
         <div className="relative aspect-[2/1] overflow-hidden">
-          <img src={route.image} alt={route.title} className="w-full h-full object-cover" />
+          {cover && <img src={cover} alt={route.title} className="w-full h-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4">
             <h1 className="text-white font-bold text-xl">{route.title}</h1>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {route.duration && (
+                <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
+                  <Clock className="w-3 h-3" />{route.duration}
+                </Badge>
+              )}
+              {route.difficulty && (
+                <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
+                  <Mountain className="w-3 h-3" />{route.difficulty}
+                </Badge>
+              )}
               <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
-                <Clock className="w-3 h-3" />
-                {route.duration}
-              </Badge>
-              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
-                <Mountain className="w-3 h-3" />
-                {route.difficulty}
-              </Badge>
-              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
-                <MapPin className="w-3 h-3" />
-                {route.stops.length} paradas
+                <MapPin className="w-3 h-3" />{stops.length} paradas
               </Badge>
             </div>
           </div>
         </div>
 
         <div className="px-4 pt-4 space-y-5">
-          {/* Description */}
-          <p className="text-sm text-muted-foreground leading-relaxed">{route.description}</p>
+          {route.description && (
+            <p className="text-sm text-muted-foreground leading-relaxed">{route.description}</p>
+          )}
+
+          {/* Stats */}
+          {estimate && (
+            <div className="bg-card border border-border rounded-xl p-3 flex items-center justify-around text-center">
+              <div>
+                <p className="text-xs text-muted-foreground">Distância</p>
+                <p className="font-semibold">{formatKm(estimate.km)}</p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div>
+                <p className="text-xs text-muted-foreground">~ Carro</p>
+                <p className="font-semibold">{formatMin(estimate.min)}</p>
+              </div>
+              {isUser && (
+                <>
+                  <div className="w-px h-8 bg-border" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Progresso</p>
+                    <p className="font-semibold">{visitedCount}/{stops.length}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Mini map */}
+          {validStops.length > 0 && (
+            <RoutePreviewMap
+              stops={validStops.map((s: any) => ({
+                lat: s.establishment.latitude,
+                lng: s.establishment.longitude,
+                name: s.establishment.name,
+              }))}
+              polyline={estimate?.coords}
+              className="rounded-xl overflow-hidden border border-border"
+              height={192}
+            />
+          )}
+
+          {/* Personalize CTA for suggested */}
+          {!isUser && (
+            <Button
+              variant="outline"
+              className="w-full rounded-full gap-2"
+              onClick={handlePersonalize}
+              disabled={clone.isPending}
+            >
+              <Sparkles className="w-4 h-4" />
+              Personalizar este roteiro
+            </Button>
+          )}
+
+          {/* Edit shortcut for user routes */}
+          {isUser && (
+            <Button
+              variant="outline"
+              className="w-full rounded-full gap-2"
+              onClick={() => navigate(`/roteiros/${id}/editar`)}
+            >
+              <Edit3 className="w-4 h-4" />
+              Editar roteiro
+            </Button>
+          )}
 
           {/* Timeline */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4">Paradas do roteiro</h3>
-            <div className="relative pl-8">
+            <h3 className="text-sm font-semibold mb-4">Paradas do roteiro</h3>
+            <div className="relative pl-8 space-y-2">
               <div className="absolute left-[15px] top-3 bottom-3 w-0.5 bg-primary/20" />
-              <div className="space-y-1">
-                {route.stops.map((stop, i) => (
+              {stops.map((s: any, i: number) => {
+                const e = s.establishment;
+                if (!e) return null;
+                const visited = isUser && s.visited;
+                return (
                   <div
                     key={i}
-                    className="relative flex items-center gap-3 p-4 bg-card rounded-2xl border border-border/50 animate-fade-in-up"
-                    style={{ animationDelay: `${i * 80}ms` }}
+                    className="relative flex items-center gap-3 p-3 bg-card rounded-2xl border border-border/50"
                   >
-                    <div className="absolute -left-8 w-[30px] h-[30px] rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold z-10">
-                      {i + 1}
+                    <div className={`absolute -left-8 w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-bold z-10 ${
+                      visited ? "bg-success text-success-foreground" : "bg-primary text-primary-foreground"
+                    }`}>
+                      {visited ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
                     </div>
-                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
-                      <img src={stop.image} alt={stop.name} className="w-full h-full object-cover" />
+                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-secondary">
+                      {(e.image_url || e.logo_url) && (
+                        <img src={e.image_url || e.logo_url} alt={e.name} className="w-full h-full object-cover" loading="lazy" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{stop.name}</p>
-                      <p className="text-xs text-muted-foreground">{stop.category}</p>
+                      <p className="text-sm font-medium truncate">{e.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{e.category}</p>
                     </div>
-                    <Navigation className="w-4 h-4 text-muted-foreground" />
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </div>
-
-          {/* Action buttons (contextual by user status) */}
-          <div className="space-y-2 pb-4">
-            {userStatus === "in_progress" && (
-              <>
-                <p className="text-xs text-center text-muted-foreground">
-                  {completedStops} de {route.stops.length} paradas concluídas
-                </p>
-                <Button
-                  className="w-full rounded-full gap-2"
-                  onClick={() => navigate(`/roteiros/${route.id}/navegar`)}
-                >
-                  <Play className="w-4 h-4" />
-                  Continuar roteiro
-                </Button>
-              </>
-            )}
-
-            {userStatus === "completed" && (
-              <>
-                <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-success">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Roteiro concluído
-                </div>
-                <Button
-                  className="w-full rounded-full gap-2"
-                  onClick={() => navigate(`/roteiros/${route.id}/navegar`)}
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Refazer roteiro
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full rounded-full gap-2"
-                  onClick={() => navigate("/perfil/check-ins")}
-                >
-                  <ImageIcon className="w-4 h-4" />
-                  Ver memórias
-                </Button>
-              </>
-            )}
-
-            {!userStatus && (
-              <Button
-                className="w-full rounded-full gap-2"
-                onClick={() => { if (id) trackRoute("route_start", id); navigate(`/roteiros/${route.id}/navegar`); }}
-              >
-                <Navigation className="w-4 h-4" />
-                Iniciar roteiro
-              </Button>
-            )}
           </div>
         </div>
       </main>
+
+      {/* Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur border-t border-border">
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          {userStatus === "in_progress" ? (
+            <Button className="w-full rounded-full gap-2" onClick={handleStart}>
+              <Play className="w-4 h-4" /> Continuar roteiro
+            </Button>
+          ) : userStatus === "completed" ? (
+            <Button className="w-full rounded-full gap-2" onClick={handleStart}>
+              <RotateCcw className="w-4 h-4" /> Refazer roteiro
+            </Button>
+          ) : (
+            <Button className="w-full rounded-full gap-2" onClick={handleStart}>
+              <Navigation className="w-4 h-4" /> Iniciar roteiro
+            </Button>
+          )}
+        </div>
+      </div>
 
       <BottomNav />
     </div>
