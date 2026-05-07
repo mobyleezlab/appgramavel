@@ -1,128 +1,174 @@
-## Diagnóstico
 
-### Dashboard (`src/admin/pages/Dashboard.tsx`)
-Hoje é uma tela "olá mundo": 6 contadores totais sem contexto temporal e um card placeholder ("Painel de atividade em tempo real será exibido aqui"). Problemas:
-- Nenhum delta, tendência ou comparação entre períodos
-- Não diferencia o que é importante (KPI primário) do que é estrutural (contagem total)
-- Sem séries temporais, sem distribuição por cidade, sem alertas
-- Não conversa com o trabalho já feito em Feed/Explore/Routes/Notifications (que têm seletor de período + KPIs + insights)
-- "Atividade Recente" está vazia, mesmo já existindo dados em `feed_events`, `check_ins`, `reviews`, `posts`, `notifications`
-- Grid `grid-cols-3` quebra com 6 itens no desktop largo (2 linhas com sobra)
-- Sem navegação contextual: clicar num card não leva para a seção correspondente
+# Roteiros — UX/UI + Supabase + Navegação
 
-### Estabelecimentos (`src/admin/pages/Establishments.tsx`)
-É um CRUD funcional, mas raso para o que esta entidade representa no app:
-- Sem KPIs do catálogo (total ativos/inativos, sem foto, sem coordenadas, sem horário, sem cupom, rating médio, % populares)
-- Filtros pobres: só categoria + busca por nome. Falta cidade, status (aberto/fechado), popular, com/sem cupom, com/sem foto, faixa de rating, ordenação (mais visualizados, melhor avaliado, recente)
-- Tabela sem ordenação por coluna, sem paginação, sem seleção em massa
-- Sem performance por estabelecimento (impressões / cliques / CTR / favoritos / check-ins / avaliações / cupons usados) — dados que já existem em `feed_events`, `user_favorites`, `check_ins`, `reviews`, `coupon_redemptions`
-- Ações por linha limitadas a editar/excluir. Falta: duplicar, abrir no app (preview), ativar/desativar, marcar popular, ver analytics
-- Sem detecção de problemas de qualidade (estabelecimentos sem coordenadas, sem foto, sem horário, sem categoria, com rating < 3, sem nenhuma impressão no período)
-- `category` está hardcoded em string PT-BR, sem normalização — quebra quando o catálogo cresce
-- Sem indicador visual rápido de saúde (badges de "incompleto", "sem foto", "sem coords")
-- Imagem 40×40 sem alt acessível claro; sem fallback semântico
+Reescrever a experiência de roteiros em três frentes: **listagem**, **criação/edição** e **navegação até as paradas**, conectando tudo ao Supabase (`routes`, `route_stops`, `user_routes`, `user_route_stops`) e mantendo a identidade visual do app (gradient primary, `max-w-2xl`, FAB, sheets, FilterChips).
 
-## O que vou construir
+---
 
-### Dashboard (reescrita seguindo padrão admin)
+## 1. Persistência (Supabase como fonte única)
 
-```text
-[ Período: 7 / 30 / 90 / Tudo ]
+- Substituir `MOCK_ROUTES` em `Roteiros.tsx`, `RoteiroDetail.tsx` e `RoteiroNavigation.tsx` por queries reais.
+- **Roteiros sugeridos:** ler `routes` + `route_stops` (join com `establishments` para imagem/coords/categoria/rating).
+- **Meus roteiros:** ler `user_routes` + `user_route_stops` do usuário logado, com status (`saved`/`in_progress`/`completed`) e progresso (visited count).
+- **Migrações necessárias** (nada destrutivo):
+  - Adicionar coluna `cover_url text` em `user_routes` (capa opcional).
+  - Adicionar coluna `estimated_duration_min int` em `user_routes` (calculado).
+  - Trigger já existe (`on_check_in_insert`) que marca paradas como visitadas e conclui rotas — manter.
+  - RPC `start_user_route(p_route_id uuid)`: muda status para `in_progress` e seta `started_at`.
+  - RPC `clone_suggested_route(p_route_id uuid)`: cria `user_route` a partir de uma `route` sugerida (para "personalizar este roteiro").
+- Camada de serviço unificada em `src/services/userRoutes.ts` e novo `src/services/routes.ts` com hooks React Query (`useSuggestedRoutes`, `useMyRoutes`, `useRouteDetail`, `useCreateRoute`, `useUpdateRoute`, `useDeleteRoute`, `useStartRoute`).
 
-[ Hero KPIs primários ]
-[ Usuários ativos | Sessões Explorar | Cliques no Feed | Check-ins | Cupons resgatados | Novos cadastros ]
-   (cada um com delta vs período anterior + sparkline mini)
+---
 
-[ Saúde do catálogo (card largo)               ] [ Atividade ao vivo (card lateral)          ]
-[ • Estabelecimentos sem foto: 4               ] [ últimos eventos: novo cadastro,           ]
-[ • Sem coordenadas: 2                         ] [ check-in, avaliação, post, redenção       ]
-[ • Sem horário: 7                             ]                                              
-[ • Sem categoria: 1                           ]
-[ • Cupons expirando em 7d: 3                  ]
-[ → cada linha vira link para o filtro correspondente em /admin/estabelecimentos | /admin/cupons ]
+## 2. Página `/roteiros` (listagem) — redesign
 
-[ Engajamento ao longo do tempo (LineChart impressions vs clicks vs check-ins) ]
+Manter `GlobalHeader`, `BottomNav`, `max-w-2xl` e identidade. Mudanças:
 
-[ Distribuição por cidade   ] [ Top 5 estabelecimentos no período          ]
-[ Donut Gramado/Canela/...  ] [ logo + nome + impressões + CTR             ]
+- **Tabs no topo** (`Sugeridos` / `Meus roteiros`) substituindo as duas seções empilhadas — usa `Tabs` do shadcn estilizadas como pill com gradient quando ativo.
+- **Sugeridos**:
+  - Hero do destaque mantém-se, mas ganha chip de **dificuldade** + **distância total estimada**.
+  - Lista vira **cards horizontais com imagem 64×64 rounded-xl**, badges de duração + nº paradas, e ChevronRight.
+  - `FilterChipsBar` reorganizado: `Todos`, `Curto (<3h)`, `1 dia`, `2+ dias`, `Família`, `Romântico`, `Aventura` (mapeados por `difficulty`/categoria principal das paradas).
+- **Meus roteiros**:
+  - Cada card mostra **mini progress bar** (`x/y paradas concluídas`) e badge de status (`Em andamento` / `Concluído` / `Salvo`).
+  - Swipe-action via long-press OU botão `MoreVertical` — opções: Editar, Duplicar, Compartilhar, Excluir (com confirm).
+  - Empty state mantém CTA, mas adiciona segunda CTA: **"Personalizar um roteiro sugerido"** que abre lista filtrada.
+- **FAB** (Plus) sempre visível na aba "Meus roteiros" → leva para `/roteiros/novo` (tela cheia).
 
-[ Insights automáticos (até 3 frases)                                                  ]
-[ "Quinta tem 38% mais cliques que a média" / "Categoria Cafés cresceu 22%" / etc.    ]
+---
 
-[ Atalhos de ação rápida ]
-[ + Novo estabelecimento ] [ + Novo cupom ] [ + Nova notificação ] [ + Novo roteiro ]
-```
+## 3. Criação/edição — `/roteiros/novo` e `/roteiros/:id/editar`
 
-Tudo navegável: cards com `onClick` que direcionam para a página/filtro correspondente. Reusa funções já existentes em `adminAnalytics.ts` (`getFeedKPIs`, `getExploreKPIs`, `getEngagementByWeekday`, `getTopEstablishmentsInFeed`) + novos helpers para "saúde do catálogo" e "atividade ao vivo".
-
-### Estabelecimentos (upgrade para gestão e analytics)
+Substituir o sheet de 3 passos por **página dedicada em tela cheia**, mais ergonômica no mobile e com melhor controle:
 
 ```text
-[ Período: 7 / 30 / 90 / Tudo ]                       [ + Novo estabelecimento ]
-
-[ KPIs do catálogo ]
-[ Total ativos | Rating médio | Com cupom | Populares | Incompletos | Sem impressão no período ]
-
-[ Toolbar avançada ]
-[ Busca | Categoria | Cidade | Status | Qualidade ▾ | Ordenar por ▾ | Visualização: Lista | Mapa ]
-   (Qualidade: sem foto, sem coords, sem horário, rating < 3, sem cupom)
-   (Ordenar: nome, mais visualizado, melhor avaliado, mais favoritado, mais check-ins, recente)
-
-[ Ações em massa quando há seleção: Ativar | Desativar | Marcar popular | Excluir ]
-
-[ Tabela enriquecida com colunas ordenáveis ]
-[ ☐ | Img | Nome (+ slug) | Categoria | Cidade | Rating | Status | Saúde | Impressões | CTR | Favoritos | Check-ins | Ações ]
-   (badges Saúde: ✓ Completo / ⚠ Sem foto / ⚠ Sem coords / ⚠ Sem horário)
-   (Ações: Editar, Ver no app, Duplicar, Toggle popular, Excluir)
-
-[ Paginação 25/50/100 + total ]
-
-[ Drawer "Detalhes & Performance" ao clicar na linha ]
-   • Header: foto + nome + categoria + status + rating
-   • KPIs do período: impressões, cliques, CTR, favoritos novos, check-ins, avaliações novas, cupons resgatados
-   • Mini-chart de impressões por dia
-   • Última atividade (últimos 5 eventos)
-   • Botões: Editar / Ver no app / Duplicar / Excluir
-
-[ Insights do catálogo (card final) ]
-   "3 estabelecimentos sem impressão há 30d", "Cafés tem o maior CTR (8,2%)", etc.
+┌─────────────────────────────┐
+│ ← Novo roteiro       Salvar │  GlobalHeader showBack + ação primária
+├─────────────────────────────┤
+│ [ Capa: tap para escolher ] │  (auto = imagem da 1ª parada)
+│ Título *                    │
+│ Descrição                   │
+├─────────────────────────────┤
+│ Paradas (3)         + Add ▾ │  menu: Buscar / Favoritos / No mapa / Check-ins
+│ ┌──────────────────────────┐│
+│ │ ⠿ 1 ▢ Mini Mundo  ✕      ││  drag-handle (dnd-kit), reordenar
+│ │ ⠿ 2 ▢ Lago Negro  ✕      ││
+│ │ ⠿ 3 ▢ Rua Coberta ✕      ││
+│ └──────────────────────────┘│
+│ Duração estimada: ~4h 20min │  calculado via OSRM (soma trajetos)
+│ Distância total: 8,4 km     │
+├─────────────────────────────┤
+│ [ Pré-visualizar no mapa ]  │  abre sheet com polyline OSRM
+└─────────────────────────────┘
 ```
 
-Visualização "Mapa" (toggle): Leaflet com pins coloridos por status (verde = ativo+saudável, amarelo = incompleto, cinza = inativo). Reusa `LocationMap`/Leaflet já no projeto.
+- **Drag-and-drop**: `@dnd-kit/core` + `@dnd-kit/sortable` para reordenar paradas.
+- **Adicionar paradas (bottom sheet com tabs)**:
+  - **Buscar** estabelecimentos (input + chips de categoria).
+  - **Favoritos** (lê `user_favorites`).
+  - **No mapa** — abre `MapSheet` em modo seleção, tap nos pins para incluir.
+  - **Próximos check-ins** — sugere baseado em `check_ins` recentes.
+- **Cálculo automático**: ao reordenar/adicionar/remover, dispara debounced fetch ao OSRM (`NavigationView` já tem helpers) para recalcular `distance` + `duration` por trecho. Persiste em `estimated_duration_min`.
+- **Capa**: padrão = imagem do 1º estabelecimento; usuário pode trocar abrindo seletor (favorito ou upload futuro — escopo desta entrega: apenas auto + escolha entre as paradas).
+- **Salvar como rascunho** automático em `localStorage` (chave `route_draft_<id|new>`) para evitar perda de dados ao voltar.
 
-## Mudanças técnicas
+---
 
-### Sem migrations
-Usa apenas tabelas e colunas existentes: `establishments`, `feed_events`, `user_favorites`, `check_ins`, `reviews`, `coupon_redemptions`, `coupons`, `user_profiles`, `notifications`.
+## 4. Detalhe — `/roteiros/:id` redesign
 
-### Arquivos
-- `src/admin/services/adminDashboard.ts` (novo)
-  - `getDashboardKPIs(period)` — usuários ativos, sessões Explorar, cliques Feed, check-ins, cupons resgatados, novos cadastros (com deltas)
-  - `getCatalogHealth()` — contagens de estabelecimentos sem foto / sem coords / sem horário / sem categoria + cupons expirando
-  - `getRecentActivity(limit)` — merge de eventos recentes (cadastro, check-in, avaliação, post, redenção)
-  - `getCityDistribution()` — usuários e estabelecimentos por cidade
-  - `getDashboardInsights(period)` — 2-3 frases automáticas
-- `src/admin/services/adminEstablishments.ts` (novo)
-  - `getEstablishmentsKPIs(period)`
-  - `listEstablishments({ search, category, city, status, quality, sortBy, page, pageSize })`
-  - `getEstablishmentPerformance(id, period)` — métricas para o drawer
-  - `getEstablishmentInsights(period)`
-  - `bulkUpdate(ids, patch)` / `duplicateEstablishment(id)` / `togglePopular(id)`
-- `src/admin/pages/Dashboard.tsx` — reescrita
-- `src/admin/pages/Establishments.tsx` — reescrita
-- `src/admin/components/EstablishmentDetailsDrawer.tsx` (novo)
-- `src/admin/components/EstablishmentMapView.tsx` (novo, opcional, reusa Leaflet)
-- `src/admin/components/PeriodSelector.tsx` — extrair se ainda não estiver isolado, para reuso
+- Hero mantido, mas ganha:
+  - **Stats row** abaixo do título: `🚶 8,4 km · ⏱ ~4h · ⛰ Fácil · 📍 6 paradas`.
+  - Chip "Personalizar este roteiro" em sugeridos (clona via RPC e abre editor).
+- **Mapa estático** (preview Leaflet não interativo, h-48 rounded-xl) acima do timeline mostrando polyline e pins numerados.
+- **Timeline** mantém estilo, mas cada parada ganha:
+  - Distância e tempo até a próxima (ex.: `→ 1,2 km · 18 min de carro`).
+  - Mini menu por parada: `Como chegar` (abre `MapSheet`), `Ver lugar` (link `/estabelecimento/:slug`).
+- **CTA principal sticky** no rodapé (sai do fluxo do scroll): `Iniciar roteiro` / `Continuar` / `Refazer`.
 
-### Padrão visual mantido
-Mesmo header com seletor de período, `StatCard` com delta, `StatusBadge`, cards `bg-card border rounded-lg`, espaçamento `space-y-6`, grid responsivo. Admin segue desktop-only (`min-w-[1024px]`). Sem mudanças no app mobile.
+---
 
-### Performance
-- Queries agregadas em paralelo com `Promise.all`
-- Paginação server-side em estabelecimentos
-- Cache em memória do período (recarrega só quando muda)
+## 5. Navegação ativa — `/roteiros/:id/navegar` redesign (híbrido com toggle)
 
-## Resultado
+Formato definitivo: **toggle Mapa ⇄ Lista** sempre acessível, mantendo card-a-card mas com mapa real integrado.
 
-- **Dashboard** vira o "cockpit" real do admin: estado de saúde, tendência, atividade ao vivo, insights e atalhos.
-- **Estabelecimentos** vira ferramenta de gestão e analytics, não só CRUD: filtros ricos, ordenação, qualidade do catálogo, drawer com performance individual, ações em massa e visualização em mapa.
+**Layout padrão (modo Mapa):**
+
+```text
+┌──────────────────────────────┐
+│ ← Sair         🗺/📋 toggle  │  GlobalHeader transparente sobre mapa
+├──────────────────────────────┤
+│                              │
+│      MAPA LEAFLET            │
+│   pins numerados + polyline  │  RouteMap c/ todos os pins,
+│   destaque = parada atual    │  rota OSRM destacada até atual
+│   pin do usuário (geoloc)    │
+│                              │
+├─ Bottom sheet (vaul) ───────┤
+│ ━━━ swipe up                 │
+│ Parada 2 de 6                │  badge progresso
+│ Mini Mundo                   │  título
+│ ⭐ 4.7 · 🐾 Pet · ⏱ 18min ↗  │  rating + tempo até lá
+│                              │
+│ [ Como chegar ▾ ]            │  abre menu:
+│   – Navegação no app (OSRM)  │   • interna (NavigationView atual)
+│   – Google Maps              │   • deep-link `https://www.google.com/maps/dir/?...`
+│   – Apple Maps               │   • `https://maps.apple.com/?daddr=...`
+│   – Waze                     │   • `https://waze.com/ul?ll=...&navigate=yes`
+│ [ Pular ]    [ Já visitei ]  │
+└──────────────────────────────┘
+```
+
+**Modo Lista** = visão atual (hero 4:5 + dots + info card + next preview), com botão para alternar de volta.
+
+- **Auto-check-in opcional**: se `Geolocation watchPosition` detectar usuário a <200 m da parada atual por 30s, sugerir banner "Marcar como visitado?" (reaproveita lógica do contexto de check-in).
+- **Persistência de progresso**: cada `Já visitei` insere em `user_route_stops.visited` (já dispara trigger que conclui rota). `Pular` apenas avança `currentStop` localmente.
+- **Saída segura**: dialog de confirmação atual mantido, MAS progresso persiste no banco — então ao reabrir, retoma de onde parou (ler primeira parada com `visited=false`).
+- **Compartilhar**: botão no header copia link `https://app.../roteiros/:id` (ou usa `navigator.share`).
+
+---
+
+## 6. Como chegar — política unificada
+
+Componente novo `<HowToGetThereButton establishment={...} />` reutilizável em RoteiroDetail, RoteiroNavigation e EstablishmentDetails:
+
+1. **Padrão**: abre `MapSheet` com OSRM (interno).
+2. **Menu "Abrir em..."**: Google Maps / Apple Maps (iOS) / Waze, via deep-links universais.
+3. Detecta plataforma (`navigator.userAgent`) para priorizar Apple Maps no iOS.
+
+---
+
+## Arquivos / mudanças técnicas
+
+**Novos**
+- `src/pages/RoteiroEditor.tsx` (cria + edita)
+- `src/components/routes/RouteCard.tsx`, `SuggestedRouteHero.tsx`, `MyRouteCard.tsx`
+- `src/components/routes/SortableStop.tsx` (dnd-kit)
+- `src/components/routes/AddStopSheet.tsx` (tabs Buscar/Favoritos/Mapa/Check-ins)
+- `src/components/routes/RoutePreviewMap.tsx` (Leaflet read-only com polyline)
+- `src/components/routes/HowToGetThereButton.tsx`
+- `src/services/routes.ts` (sugeridos)
+- Hooks: `src/hooks/useRouteEstimates.ts` (OSRM batched)
+
+**Editados**
+- `src/pages/Roteiros.tsx`, `RoteiroDetail.tsx`, `RoteiroNavigation.tsx`
+- `src/services/userRoutes.ts` (CRUD completo + RPCs)
+- `src/App.tsx` (rotas `/roteiros/novo`, `/roteiros/:id/editar`)
+
+**Migrações Supabase**
+- ALTER `user_routes` ADD `cover_url`, `estimated_duration_min`.
+- CREATE FUNCTION `start_user_route`, `clone_suggested_route`.
+
+**Dependências**
+- `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`.
+
+**Memória**
+- Atualizar `mem://features/routes-system` e `mem://features/routes-navigation` com a nova arquitetura (editor full-screen, hybrid map/list, deep-links externos, persistência Supabase).
+
+---
+
+## Fora do escopo (para depois)
+
+- Upload manual de capa do roteiro (usar storage `user-memories`).
+- Compartilhamento social com OG image gerada.
+- Roteiros colaborativos / multi-usuário.
+- Notificações push "Sua próxima parada está perto".
