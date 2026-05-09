@@ -97,7 +97,7 @@ export default function Roteiros() {
     <div className="min-h-screen bg-background pt-14">
       <GlobalHeader title="Roteiros" />
 
-      <main className="max-w-2xl mx-auto px-4 pb-24 pt-4 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 pb-28 pt-4 space-y-4">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid grid-cols-2 w-full rounded-full bg-secondary p-1 h-10">
             <TabsTrigger

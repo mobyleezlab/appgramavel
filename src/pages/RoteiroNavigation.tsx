@@ -133,10 +133,10 @@ export default function RoteiroNavigation() {
   }));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-14">
       <GlobalHeader showBack onBack={() => setShowExit(true)} />
 
-      <main className="max-w-2xl mx-auto pt-14 pb-20">
+      <main className="max-w-2xl mx-auto pb-20">
         {/* Toggle map/list */}
         <div className="px-4 pt-3 flex justify-end">
           <div className="inline-flex bg-secondary rounded-full p-1">

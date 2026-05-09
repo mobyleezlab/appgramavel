@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import RoutePreviewMap from "@/components/routes/RoutePreviewMap";
-import { HowToGetThereButton } from "@/components/routes/HowToGetThereButton";
+
 import { useCloneSuggestedRoute, useMyRoute, useStartRoute, useSuggestedRoute } from "@/hooks/useRoutes";
 import { getMultiLegRoute, formatKm, formatMin } from "@/lib/routeEstimates";
 import { toast } from "sonner";
