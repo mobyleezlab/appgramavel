@@ -149,6 +149,7 @@ export default function Roteiros() {
                   difficulty={(suggestedList[0] as any).difficulty}
                   stopsCount={(suggestedList[0] as any).route_stops?.length ?? 0}
                   onClick={() => navigate(`/roteiros/${(suggestedList[0] as any).id}`)}
+                  onStart={() => handleStartSuggested((suggestedList[0] as any).id)}
                 />
                 <div className="space-y-2">
                   {suggestedList.slice(1).map((r: any) => (
@@ -160,6 +161,7 @@ export default function Roteiros() {
                       stopsCount={r.route_stops?.length ?? 0}
                       imageUrl={r.image_url}
                       onClick={() => navigate(`/roteiros/${r.id}`)}
+                      onStart={() => handleStartSuggested(r.id)}
                     />
                   ))}
                 </div>
