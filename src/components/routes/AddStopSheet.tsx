@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, MapPin, Heart, History, Check, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,7 @@ export function AddStopSheet({ open, onOpenChange, selectedIds, onConfirm }: Pro
   const [tab, setTab] = useState("search");
   const [search, setSearch] = useState("");
   const [allEsts, setAllEsts] = useState<MiniEst[]>([]);
+  const [loading, setLoading] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [checkinIds, setCheckinIds] = useState<string[]>([]);
   const [draft, setDraft] = useState<Set<string>>(new Set(selectedIds));
@@ -41,11 +43,17 @@ export function AddStopSheet({ open, onOpenChange, selectedIds, onConfirm }: Pro
   useEffect(() => {
     if (!open) return;
     setDraft(new Set(selectedIds));
+    setSearch("");
+    setTab("search");
+    setLoading(true);
     supabase
       .from("establishments")
       .select("id,name,category,logo_url,image_url,latitude,longitude")
       .order("rating", { ascending: false })
-      .then(({ data }) => setAllEsts((data as MiniEst[]) ?? []));
+      .then(({ data }) => {
+        setAllEsts((data as MiniEst[]) ?? []);
+        setLoading(false);
+      });
     if (user?.id) {
       supabase
         .from("user_favorites")
@@ -70,7 +78,7 @@ export function AddStopSheet({ open, onOpenChange, selectedIds, onConfirm }: Pro
 
   const filteredSearch = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return allEsts.slice(0, 50);
+    if (!q) return allEsts.slice(0, 100);
     return allEsts.filter(
       (e) =>
         e.name.toLowerCase().includes(q) || e.category.toLowerCase().includes(q),
@@ -142,64 +150,112 @@ export function AddStopSheet({ open, onOpenChange, selectedIds, onConfirm }: Pro
     <div className="py-12 text-center text-sm text-muted-foreground">{text}</div>
   );
 
+  const skeletons = (
+    <div className="space-y-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-16 rounded-xl" />
+      ))}
+    </div>
+  );
+
   const addedCount = draft.size - selectedIds.length;
   const removedCount = selectedIds.filter((id) => !draft.has(id)).length;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="rounded-t-2xl h-[85vh] flex flex-col p-0">
-        <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="text-lg font-bold">Adicionar paradas</SheetTitle>
+      <SheetContent
+        side="bottom"
+        className="p-0 h-[100dvh] max-h-[100dvh] rounded-t-none border-t-0 sm:h-[92vh] sm:rounded-t-2xl sm:border-t flex flex-col"
+      >
+        <SheetHeader className="px-4 pt-4 pb-2 border-b border-border/60 shrink-0">
+          <SheetTitle className="text-lg font-bold text-left">
+            Adicionar paradas
+          </SheetTitle>
         </SheetHeader>
 
-        <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-4 grid grid-cols-3">
-            <TabsTrigger value="search" className="gap-1.5">
-              <Search className="w-3.5 h-3.5" /> Buscar
-            </TabsTrigger>
-            <TabsTrigger value="fav" className="gap-1.5">
-              <Heart className="w-3.5 h-3.5" /> Favoritos
-            </TabsTrigger>
-            <TabsTrigger value="ci" className="gap-1.5">
-              <History className="w-3.5 h-3.5" /> Recentes
-            </TabsTrigger>
-          </TabsList>
+        <Tabs
+          value={tab}
+          onValueChange={setTab}
+          className="flex-1 min-h-0 flex flex-col"
+        >
+          <div className="px-4 pt-3 shrink-0">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="search" className="gap-1.5">
+                <Search className="w-3.5 h-3.5" /> Buscar
+              </TabsTrigger>
+              <TabsTrigger value="fav" className="gap-1.5">
+                <Heart className="w-3.5 h-3.5" /> Favoritos
+                {favList.length > 0 && (
+                  <span className="text-[10px] opacity-70">({favList.length})</span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="ci" className="gap-1.5">
+                <History className="w-3.5 h-3.5" /> Recentes
+                {checkinList.length > 0 && (
+                  <span className="text-[10px] opacity-70">({checkinList.length})</span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="search" className="flex-1 min-h-0 mt-3 px-4 flex flex-col">
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar estabelecimento..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+          <TabsContent
+            value="search"
+            className="flex-1 min-h-0 mt-3 flex flex-col data-[state=inactive]:hidden"
+            forceMount
+          >
+            <div className="px-4 pb-2 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar estabelecimento..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-              {filteredSearch.length === 0
-                ? empty("Nenhum resultado")
-                : filteredSearch.map(renderRow)}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 space-y-2">
+              {loading
+                ? skeletons
+                : filteredSearch.length === 0
+                  ? empty("Nenhum resultado")
+                  : filteredSearch.map(renderRow)}
             </div>
           </TabsContent>
 
-          <TabsContent value="fav" className="flex-1 min-h-0 mt-3 px-4 flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-              {favList.length === 0
-                ? empty("Você ainda não tem favoritos")
-                : favList.map(renderRow)}
+          <TabsContent
+            value="fav"
+            className="flex-1 min-h-0 mt-3 flex flex-col data-[state=inactive]:hidden"
+            forceMount
+          >
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 space-y-2">
+              {loading
+                ? skeletons
+                : favList.length === 0
+                  ? empty("Você ainda não tem favoritos")
+                  : favList.map(renderRow)}
             </div>
           </TabsContent>
 
-          <TabsContent value="ci" className="flex-1 min-h-0 mt-3 px-4 flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
-              {checkinList.length === 0
-                ? empty("Nenhum check-in recente")
-                : checkinList.map(renderRow)}
+          <TabsContent
+            value="ci"
+            className="flex-1 min-h-0 mt-3 flex flex-col data-[state=inactive]:hidden"
+            forceMount
+          >
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 space-y-2">
+              {loading
+                ? skeletons
+                : checkinList.length === 0
+                  ? empty("Nenhum check-in recente")
+                  : checkinList.map(renderRow)}
             </div>
           </TabsContent>
         </Tabs>
 
-        <div className="border-t border-border p-3 flex items-center gap-2">
+        <div
+          className="border-t border-border p-3 flex items-center gap-2 shrink-0"
+          style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        >
           <p className="text-xs text-muted-foreground flex-1">
             {draft.size} parada{draft.size === 1 ? "" : "s"}
             {addedCount > 0 ? ` · +${addedCount}` : ""}

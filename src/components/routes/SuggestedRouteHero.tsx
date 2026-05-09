@@ -1,4 +1,4 @@
-import { ChevronRight, Clock, MapPin } from "lucide-react";
+import { ChevronRight, Clock, MapPin, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   stopsCount: number;
   difficulty?: string | null;
   onClick: () => void;
+  onStart?: () => void;
 }
 
 export function SuggestedRouteHero({
@@ -17,6 +18,7 @@ export function SuggestedRouteHero({
   stopsCount,
   difficulty,
   onClick,
+  onStart,
 }: Props) {
   return (
     <div
@@ -39,21 +41,36 @@ export function SuggestedRouteHero({
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4">
         <h3 className="text-white font-bold text-lg drop-shadow">{title}</h3>
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          {duration && (
+        <div className="flex items-end justify-between gap-2 mt-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {duration && (
+              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
+                <Clock className="w-3 h-3" />
+                {duration}
+              </Badge>
+            )}
             <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
-              <Clock className="w-3 h-3" />
-              {duration}
+              <MapPin className="w-3 h-3" />
+              {stopsCount} paradas
             </Badge>
-          )}
-          <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs gap-1">
-            <MapPin className="w-3 h-3" />
-            {stopsCount} paradas
-          </Badge>
-          {difficulty && (
-            <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs">
-              {difficulty}
-            </Badge>
+            {difficulty && (
+              <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm text-xs">
+                {difficulty}
+              </Badge>
+            )}
+          </div>
+          {onStart && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onStart();
+              }}
+              className="shrink-0 inline-flex items-center gap-1.5 bg-white/95 hover:bg-white text-foreground text-xs font-semibold px-3 py-1.5 rounded-full shadow-md active:scale-95 transition-transform"
+              aria-label="Iniciar roteiro"
+            >
+              <Navigation className="w-3.5 h-3.5" />
+              Iniciar
+            </button>
           )}
         </div>
       </div>

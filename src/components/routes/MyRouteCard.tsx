@@ -1,34 +1,57 @@
-import { ChevronRight, MapPin, MoreVertical, Play, CheckCircle2, Bookmark } from "lucide-react";
+import {
+  ChevronRight,
+  MapPin,
+  MoreVertical,
+  Play,
+  CheckCircle2,
+  Bookmark,
+  Navigation,
+  RotateCcw,
+  Trash2,
+  Edit3,
+  Copy,
+  Share2,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Trash2, Edit3, Copy, Share2 } from "lucide-react";
 import type { UserRouteRow } from "@/services/userRoutes";
 
 interface Props {
   route: UserRouteRow;
   onOpen: () => void;
+  onStart: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
   onShare: () => void;
 }
 
-export function MyRouteCard({ route, onOpen, onEdit, onDelete, onDuplicate, onShare }: Props) {
+export function MyRouteCard({
+  route,
+  onOpen,
+  onStart,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onShare,
+}: Props) {
   const stops = route.user_route_stops ?? [];
   const total = stops.length;
   const visited = stops.filter((s) => s.visited).length;
   const progress = total > 0 ? Math.round((visited / total) * 100) : 0;
 
+  const sortedStops = [...stops].sort((a, b) => a.stop_order - b.stop_order);
   const cover =
     route.cover_url ||
-    stops.sort((a, b) => a.stop_order - b.stop_order)[0]?.establishment?.image_url ||
-    stops[0]?.establishment?.logo_url ||
+    sortedStops[0]?.establishment?.image_url ||
+    sortedStops[0]?.establishment?.logo_url ||
     null;
 
   const statusBadge = () => {
@@ -51,6 +74,16 @@ export function MyRouteCard({ route, onOpen, onEdit, onDelete, onDuplicate, onSh
     );
   };
 
+  const startLabel =
+    route.status === "in_progress"
+      ? { text: "Continuar", Icon: Play }
+      : route.status === "completed"
+        ? { text: "Refazer", Icon: RotateCcw }
+        : { text: "Iniciar", Icon: Navigation };
+
+  const StartIcon = startLabel.Icon;
+  const canStart = total > 0;
+
   return (
     <div className="relative bg-card rounded-xl border border-border shadow-card overflow-hidden">
       <button
@@ -59,11 +92,16 @@ export function MyRouteCard({ route, onOpen, onEdit, onDelete, onDuplicate, onSh
       >
         <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary shrink-0">
           {cover && (
-            <img src={cover} alt={route.title} className="w-full h-full object-cover" loading="lazy" />
+            <img
+              src={cover}
+              alt={route.title}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
           )}
         </div>
         <div className="flex-1 min-w-0 py-0.5 flex flex-col">
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 pr-8">
             <p className="font-semibold text-foreground text-sm truncate flex-1">
               {route.title}
             </p>
@@ -83,6 +121,22 @@ export function MyRouteCard({ route, onOpen, onEdit, onDelete, onDuplicate, onSh
           </div>
         </div>
       </button>
+
+      {/* Action bar */}
+      <div className="px-3 pb-3 -mt-1">
+        <Button
+          size="sm"
+          className="w-full rounded-full gap-1.5 h-9"
+          disabled={!canStart}
+          onClick={(e) => {
+            e.stopPropagation();
+            onStart();
+          }}
+        >
+          <StartIcon className="w-4 h-4" />
+          {startLabel.text}
+        </Button>
+      </div>
 
       <div className="absolute top-2 right-2">
         <DropdownMenu>
@@ -105,7 +159,10 @@ export function MyRouteCard({ route, onOpen, onEdit, onDelete, onDuplicate, onSh
             <DropdownMenuItem onClick={onShare}>
               <Share2 className="w-4 h-4 mr-2" /> Compartilhar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              onClick={onDelete}
+              className="text-destructive focus:text-destructive"
+            >
               <Trash2 className="w-4 h-4 mr-2" /> Excluir
             </DropdownMenuItem>
           </DropdownMenuContent>
