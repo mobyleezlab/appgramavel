@@ -25,6 +25,7 @@ import {
   useMyRoutes,
   useSuggestedRoutes,
   useCloneSuggestedRoute,
+  useStartRoute,
 } from "@/hooks/useRoutes";
 import type { UserRouteRow } from "@/services/userRoutes";
 import { toast } from "sonner";
@@ -51,6 +52,7 @@ export default function Roteiros() {
   const mine = useMyRoutes();
   const deleteRoute = useDeleteRoute();
   const cloneRoute = useCloneSuggestedRoute();
+  const startRoute = useStartRoute();
 
   const suggestedList = (suggested.data ?? []).filter((r: any) =>
     matchFilter(r.duration, filter),
@@ -80,11 +82,22 @@ export default function Roteiros() {
     }
   };
 
+  const handleStartMine = async (route: UserRouteRow) => {
+    try {
+      await startRoute.mutateAsync(route.id);
+    } catch { /* ok */ }
+    navigate(`/roteiros/${route.id}/navegar?type=user`);
+  };
+
+  const handleStartSuggested = (id: string) => {
+    navigate(`/roteiros/${id}/navegar`);
+  };
+
   return (
     <div className="min-h-screen bg-background pt-14">
       <GlobalHeader title="Roteiros" />
 
-      <main className="max-w-2xl mx-auto px-4 pb-24 pt-4 space-y-4">
+      <main className="max-w-2xl mx-auto px-4 pb-28 pt-4 space-y-4">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid grid-cols-2 w-full rounded-full bg-secondary p-1 h-10">
             <TabsTrigger
@@ -136,6 +149,7 @@ export default function Roteiros() {
                   difficulty={(suggestedList[0] as any).difficulty}
                   stopsCount={(suggestedList[0] as any).route_stops?.length ?? 0}
                   onClick={() => navigate(`/roteiros/${(suggestedList[0] as any).id}`)}
+                  onStart={() => handleStartSuggested((suggestedList[0] as any).id)}
                 />
                 <div className="space-y-2">
                   {suggestedList.slice(1).map((r: any) => (
@@ -147,6 +161,7 @@ export default function Roteiros() {
                       stopsCount={r.route_stops?.length ?? 0}
                       imageUrl={r.image_url}
                       onClick={() => navigate(`/roteiros/${r.id}`)}
+                      onStart={() => handleStartSuggested(r.id)}
                     />
                   ))}
                 </div>
@@ -190,6 +205,7 @@ export default function Roteiros() {
                   key={r.id}
                   route={r}
                   onOpen={() => navigate(`/roteiros/${r.id}?type=user`)}
+                  onStart={() => handleStartMine(r)}
                   onEdit={() => navigate(`/roteiros/${r.id}/editar`)}
                   onDuplicate={() => navigate(`/roteiros/novo?clone=${r.id}`)}
                   onShare={() => handleShare(r)}
