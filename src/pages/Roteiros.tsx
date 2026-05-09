@@ -52,6 +52,7 @@ export default function Roteiros() {
   const mine = useMyRoutes();
   const deleteRoute = useDeleteRoute();
   const cloneRoute = useCloneSuggestedRoute();
+  const startRoute = useStartRoute();
 
   const suggestedList = (suggested.data ?? []).filter((r: any) =>
     matchFilter(r.duration, filter),
@@ -79,6 +80,17 @@ export default function Roteiros() {
     } catch (e: any) {
       toast.error(e?.message ?? "Não foi possível duplicar");
     }
+  };
+
+  const handleStartMine = async (route: UserRouteRow) => {
+    try {
+      await startRoute.mutateAsync(route.id);
+    } catch { /* ok */ }
+    navigate(`/roteiros/${route.id}/navegar?type=user`);
+  };
+
+  const handleStartSuggested = (id: string) => {
+    navigate(`/roteiros/${id}/navegar`);
   };
 
   return (
