@@ -1,70 +1,53 @@
-## Correções nos roteiros
+## Diagnóstico
 
-### 1. Botão "Iniciar" ausente na página /roteiros
+No preview atual o app **carrega** o Feed corretamente (Supabase respondendo 200, sessão válida, posts renderizando). O sintoma "carrega e depois some após alguns segundos" indica que algo é lançado *depois* do primeiro render — e como **não existe nenhum ErrorBoundary no projeto**, qualquer `throw` em componente / hook / render derruba a árvore inteira para uma tela em branco silenciosa (React 18 unmount total).
 
-Hoje, na lista, só é possível abrir o detalhe para então iniciar. Falta um atalho direto.
+Candidatos que já identifiquei no código lendo os arquivos:
 
-**`src/components/routes/MyRouteCard.tsx`**
-- Reorganizar layout em duas linhas: a área de toque atual (capa + título + progresso) e uma barra de ação ancorada na base do card com um botão primário:
-  - Se `status === "in_progress"` → "Continuar" (ícone `Play`).
-  - Se `status === "completed"` → "Refazer" (ícone `RotateCcw`).
-  - Caso contrário → "Iniciar" (ícone `Navigation`).
-- O botão dispara `onStart(route)` (nova prop). O clique não pode propagar para o `onOpen` do card.
-- Manter o menu `MoreVertical` (Editar / Duplicar / Compartilhar / Excluir).
+1. **Sem ErrorBoundary raiz** (`src/App.tsx`). Um único erro em `PostCard`, `LocationContext`, `useRoutes`, etc. apaga o app sem log visível ao usuário.
+2. **Chunks lazy que falham a importar** (`lazy(() => import(...))` em `App.tsx`). Quando o Vite/preview troca de build o import antigo devolve 404 e o Suspense estoura → tela branca. Isso é a causa clássica de "some após alguns segundos" enquanto o usuário navega.
+3. **Warning ruidoso `fetchPriority` em `PostCard.tsx:132`** — não derruba sozinho, mas polui o console e mostra que a atribuição de props de imagem não está limpa.
+4. Nenhum tratamento de erro em `queryFn` (React Query com `retry: 1`) — se um `throw` chegar a componente pai sem boundary, mesma consequência.
 
-**`src/components/routes/SuggestedRouteHero.tsx` e `SuggestedRouteRow.tsx`**
-- Adicionar uma prop opcional `onStart` e um botão pequeno "Iniciar" (pill, `bg-white/90 text-foreground` no hero / `variant="secondary"` na row) ao lado do `ChevronRight`. `stopPropagation` no clique.
+Nada disso exige mudança de backend/regra de negócio — é resiliência de front-end.
 
-**`src/pages/Roteiros.tsx`**
-- Adicionar handler `handleStart`:
-  - Para "Meus roteiros": chamar `useStartRoute().mutateAsync(id)` e navegar para `/roteiros/:id/navegar?type=user`.
-  - Para sugeridos: navegar direto para `/roteiros/:id/navegar`.
-- Passar `onStart` para `MyRouteCard`, `SuggestedRouteHero` e `SuggestedRouteRow`.
+## O que vou fazer
 
-### 2. AddStopSheet — locais não aparecem corretamente
+### 1. Adicionar `ErrorBoundary` global (novo arquivo)
+`src/components/ErrorBoundary.tsx` — classe React clássica com `componentDidCatch` que:
+- loga o erro completo no `console.error` (para aparecer nos logs que consigo ler);
+- detecta erros de chunk (`ChunkLoadError`, mensagem contendo `Failed to fetch dynamically imported module` / `Importing a module script failed`) e, nesses casos, faz `window.location.reload()` **uma única vez** (usando `sessionStorage` como guarda) — resolve a causa #2 automaticamente;
+- caso contrário renderiza um fallback amigável no padrão do design system (card centralizado, botão "Tentar novamente" que reseta o boundary, botão "Voltar ao início").
 
-O sheet usa `h-[85vh] flex flex-col` com `Tabs` aninhado e `TabsContent` com `overflow-y-auto`. Em viewports pequenos (390×632) a área útil fica ~280 px e os cartões parecem cortados/ocultos por scroll aninhado.
+### 2. Envolver a árvore em `App.tsx`
+Colocar `<ErrorBoundary>` como filho de `QueryClientProvider` e envolvendo `<BrowserRouter>`, para capturar erros em qualquer rota, provider ou lazy chunk sem quebrar o SW/toaster.
 
-**`src/components/routes/AddStopSheet.tsx`**
-- Trocar para sheet quase fullscreen mobile:
-  `h-[100dvh] max-h-[100dvh] rounded-t-none sm:rounded-t-2xl sm:h-[92vh]`.
-- Header sticky (`sticky top-0 bg-background z-10`) com botão fechar visível (manter o `SheetPrimitive.Close` padrão funciona).
-- Estrutura interna em coluna: `header` (auto) → `TabsList` (auto) → barra de busca (sticky no tab "search") → área de lista única com `overflow-y-auto overscroll-contain` ocupando o restante via `flex-1 min-h-0`.
-- Garantir que apenas UMA camada role: remover o `flex-1 overflow-y-auto` interno aninhado e usar um `<div ref className="flex-1 min-h-0 overflow-y-auto">` direto sob `TabsContent` (sem flex-col extras).
-- Resetar `search` quando o sheet abre (`useEffect open → setSearch("")`).
-- Footer de confirmação fixo com `pb-[env(safe-area-inset-bottom)]`.
-- Aumentar limite inicial de busca de 50 para 100 e adicionar skeleton enquanto `allEsts` está vazio.
-- Adicionar contagem visível por aba (ex.: "Favoritos (12)").
+### 3. Suspense por rota com fallback resiliente
+Trocar o `Suspense` único que hoje engloba todas as `<Routes>` por um `<Suspense>` interno + `<ErrorBoundary>` local dentro da árvore, para que uma falha de import de uma página não apague o header/nav — o usuário continua vendo o shell e recebe "não foi possível carregar esta página, recarregar?".
 
-### 3. Outras inconsistências
+### 4. Corrigir warning `fetchPriority` no `PostCard`
+Em `src/components/feed/PostCard.tsx:132` trocar o spread `{...(isFirst ? { fetchPriority: "high" } : {})}` pelo atributo lower-case aceito pelo React DOM (`fetchpriority`) — remove o warning e evita reprocessamento de props em cada render.
 
-**`src/pages/RoteiroDetail.tsx`**
-- Remover import não usado `HowToGetThereButton`.
-- Em `handleStart`, quando `isUser` for `false` mas o usuário estiver logado, manter o comportamento atual (sugeridos navegam para `/navegar` sem `?type=user`).
-- Garantir que `validStops` e `stops` derivem de uma cópia ordenada para evitar mutação.
+### 5. Verificação
+- `bunx tsgo --noEmit` para garantir tipos.
+- Playwright headless: abrir `/`, esperar 15s ociosos, capturar screenshot e conferir que o Feed continua montado; forçar um throw temporário em dev *só localmente durante o teste* para confirmar que o boundary aparece em vez da tela branca (revertido antes de terminar).
+- Ler console logs pós-mudança para confirmar que o warning `fetchPriority` sumiu.
 
-**`src/components/routes/MyRouteCard.tsx`**
-- Substituir `stops.sort(...)` por `[...stops].sort(...)` para não mutar o array do React Query (causa de reordenações imprevisíveis ao refetchar).
+## Arquivos afetados
 
-**`src/pages/RoteiroNavigation.tsx`**
-- Adicionar `pt-14` no wrapper raiz (hoje só há no `<main>` em alguns retornos; o caminho principal não tem) para o conteúdo não ficar sob o `GlobalHeader` fixo.
-- No view "map", destacar a parada atual passando `currentIndex={localCursor}` ao `RoutePreviewMap` (se a prop não existir, adicionar realce simples por número).
-- Quando `validStops.length === 0` mostrar um aviso amigável em vez de mapa vazio.
+```text
+src/components/ErrorBoundary.tsx   (novo)
+src/App.tsx                        (edit: envolve com ErrorBoundary + suspense por rota)
+src/components/feed/PostCard.tsx   (edit: fetchpriority lowercase)
+```
 
-**`src/pages/Roteiros.tsx`**
-- Remover o import não usado `MapPin` se sobrar após mudanças (verificar).
-- O FAB sobrepõe o último card; aumentar `pb-24` → `pb-28` no `<main>` quando houver itens em "Meus roteiros".
+## O que NÃO vou mexer
 
-### Fora de escopo
-- Mudanças no schema/RPCs do Supabase.
-- Redesign do mapa de navegação ou integração com geolocalização em tempo real.
-- Edição da capa manual.
+- Supabase, RLS, schema, edge functions — o backend está respondendo 200.
+- Design system, cores, layout, rotas existentes.
+- Service Worker (`public/sw.js`) — no preview ele nem registra; em produção o cache-first de assets é intencional.
+- Lógica das páginas de Roteiros / Feed / Mapa.
 
-### Arquivos editados
-- `src/pages/Roteiros.tsx`
-- `src/pages/RoteiroDetail.tsx`
-- `src/pages/RoteiroNavigation.tsx`
-- `src/components/routes/MyRouteCard.tsx`
-- `src/components/routes/SuggestedRouteHero.tsx`
-- `src/components/routes/SuggestedRouteRow.tsx`
-- `src/components/routes/AddStopSheet.tsx`
+## Observação
+
+Se depois desse fix o boundary começar a aparecer com uma mensagem específica, essa mensagem vira o próximo bug a corrigir — mas primeiro precisamos parar a tela branca silenciosa para conseguir enxergar o erro real.

@@ -129,7 +129,7 @@ export function PostCard({ post, isFirst = false }: PostCardProps) {
           width={800}
           height={1000}
           loading={isFirst ? "eager" : "lazy"}
-          {...(isFirst ? { fetchPriority: "high" as const } : {})}
+          {...(isFirst ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
         />
         {animatingEmoji && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

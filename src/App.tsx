@@ -14,6 +14,7 @@ import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy-loaded routes
 const Explore = lazy(() => import("./pages/Explore"));
@@ -76,8 +77,9 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
                   <ScrollRestore />
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
                       {/* Public auth routes */}
                       <Route path="/auth/login" element={<Login />} />
                       <Route path="/auth/register" element={<Register />} />
@@ -116,8 +118,9 @@ const App = () => (
                       {/* Legacy badges redirect to checkins */}
                       <Route path="/perfil/badges" element={<Navigate to="/perfil/checkins" replace />} />
                       <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
+                      </Routes>
+                    </Suspense>
+                  </ErrorBoundary>
                 </BrowserRouter>
               </CouponsProvider>
             </ReactionsProvider>
