@@ -14,6 +14,7 @@ import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy-loaded routes
 const Explore = lazy(() => import("./pages/Explore"));
