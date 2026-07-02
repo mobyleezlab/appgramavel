@@ -118,8 +118,9 @@ const App = () => (
                       {/* Legacy badges redirect to checkins */}
                       <Route path="/perfil/badges" element={<Navigate to="/perfil/checkins" replace />} />
                       <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
+                      </Routes>
+                    </Suspense>
+                  </ErrorBoundary>
                 </BrowserRouter>
               </CouponsProvider>
             </ReactionsProvider>
