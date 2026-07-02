@@ -77,8 +77,9 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
                   <ScrollRestore />
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
+                  <ErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
                       {/* Public auth routes */}
                       <Route path="/auth/login" element={<Login />} />
                       <Route path="/auth/register" element={<Register />} />
