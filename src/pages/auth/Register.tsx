@@ -126,7 +126,26 @@ export default function Register() {
                 </Select>
               </div>
             </div>
-            <Button className="w-full rounded-full" disabled={loading}>
+            <div className="flex items-start gap-2 pt-1">
+              <Checkbox
+                id="accept-privacy"
+                checked={acceptedPrivacy}
+                onCheckedChange={(v) => setAcceptedPrivacy(v === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="accept-privacy" className="text-xs font-normal leading-snug text-muted-foreground cursor-pointer">
+                Li e concordo com a{" "}
+                <a
+                  href="/privacidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Política de Privacidade
+                </a>
+              </Label>
+            </div>
+            <Button className="w-full rounded-full" disabled={loading || !acceptedPrivacy}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {loading ? "Criando conta..." : "Criar conta"}
             </Button>
