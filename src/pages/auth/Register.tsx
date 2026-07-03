@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AgeScrollPicker } from "@/components/ui/AgeScrollPicker";
 import logoSrc from "@/assets/logo_gramavel_header.svg";
 
@@ -33,6 +34,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [form, setForm] = useState({
     name: "", email: "", password: "", confirmPassword: "",
     age: null as number | null, gender: "", city: "", state: "RS",
@@ -124,7 +126,26 @@ export default function Register() {
                 </Select>
               </div>
             </div>
-            <Button className="w-full rounded-full" disabled={loading}>
+            <div className="flex items-start gap-2 pt-1">
+              <Checkbox
+                id="accept-privacy"
+                checked={acceptedPrivacy}
+                onCheckedChange={(v) => setAcceptedPrivacy(v === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="accept-privacy" className="text-xs font-normal leading-snug text-muted-foreground cursor-pointer">
+                Li e concordo com a{" "}
+                <a
+                  href="/privacidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Política de Privacidade
+                </a>
+              </Label>
+            </div>
+            <Button className="w-full rounded-full" disabled={loading || !acceptedPrivacy}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {loading ? "Criando conta..." : "Criar conta"}
             </Button>
