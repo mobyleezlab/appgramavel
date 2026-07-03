@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AgeScrollPicker } from "@/components/ui/AgeScrollPicker";
 import logoSrc from "@/assets/logo_gramavel_header.svg";
 
@@ -33,6 +34,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [form, setForm] = useState({
     name: "", email: "", password: "", confirmPassword: "",
     age: null as number | null, gender: "", city: "", state: "RS",

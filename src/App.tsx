@@ -15,6 +15,7 @@ import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Privacidade from "./pages/Privacidade";
 
 // ---- Lazy route loaders (exposed so we can prefetch them on idle / on hover) ----
 const loadExplore = () => import("./pages/Explore");
@@ -161,6 +162,7 @@ const App = () => (
                           <Route path="/auth/reset-password" element={<ResetPassword />} />
                           <Route path="/auth/update-password" element={<UpdatePassword />} />
                           <Route path="/auth/confirm" element={<EmailConfirmed />} />
+                          <Route path="/privacidade" element={<Privacidade />} />
                           <Route path="/auth/callback" element={<EmailConfirmed />} />
                           {/* Legacy auth route redirect */}
                           <Route path="/auth" element={<Navigate to="/auth/login" replace />} />
