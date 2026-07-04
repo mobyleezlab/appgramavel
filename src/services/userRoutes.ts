@@ -41,6 +41,8 @@ export async function updateUserRouteStop(stopId: string, input: UpdateStopInput
     .from("user_route_stops")
     .update(input as any)
     .eq("id", stopId);
+}
+
 
 export async function getUserRoutes(userId?: string) {
   const uid = userId ?? (await getCurrentUserId());

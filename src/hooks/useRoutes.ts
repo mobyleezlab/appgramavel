@@ -12,6 +12,8 @@ import {
   startUserRoute,
   updateUserRoute,
   updateUserRouteStatus,
+  updateUserRouteStop,
+  type UpdateStopInput,
 } from "@/services/userRoutes";
 
 export const routesKeys = {
