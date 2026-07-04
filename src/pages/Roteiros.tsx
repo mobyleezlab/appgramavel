@@ -100,7 +100,7 @@ export default function Roteiros() {
               value="mine"
               className="rounded-full data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
-              Meus roteiros
+              Minhas listas
             </TabsTrigger>
           </TabsList>
 
