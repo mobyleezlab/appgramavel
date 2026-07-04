@@ -140,7 +140,17 @@ export function useMarkStopVisited() {
   });
 }
 
-export function useUpdateRouteStatus() {
+export function useUpdateStop() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { stopId: string; input: UpdateStopInput }) => {
+      const { error } = await updateUserRouteStop(vars.stopId, vars.input);
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateMine(qc),
+  });
+}
+
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { id: string; status: Parameters<typeof updateUserRouteStatus>[1] }) => {
