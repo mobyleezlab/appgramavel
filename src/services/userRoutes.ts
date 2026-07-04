@@ -21,9 +21,28 @@ export interface UserRouteRow {
     stop_order: number;
     visited: boolean;
     visited_at: string | null;
+    personal_note?: string | null;
+    planned_day?: number | null;
+    priority?: "low" | "medium" | "high" | null;
     establishment: any;
   }>;
 }
+
+export type StopPriority = "low" | "medium" | "high";
+
+export interface UpdateStopInput {
+  personal_note?: string | null;
+  planned_day?: number | null;
+  priority?: StopPriority | null;
+}
+
+export async function updateUserRouteStop(stopId: string, input: UpdateStopInput) {
+  return supabase
+    .from("user_route_stops")
+    .update(input as any)
+    .eq("id", stopId);
+}
+
 
 export async function getUserRoutes(userId?: string) {
   const uid = userId ?? (await getCurrentUserId());

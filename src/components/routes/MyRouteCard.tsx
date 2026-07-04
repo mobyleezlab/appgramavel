@@ -2,19 +2,13 @@ import {
   ChevronRight,
   MapPin,
   MoreVertical,
-  Play,
-  CheckCircle2,
-  Bookmark,
-  Navigation,
-  RotateCcw,
+  CalendarDays,
   Trash2,
   Edit3,
   Copy,
   Share2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +20,6 @@ import type { UserRouteRow } from "@/services/userRoutes";
 interface Props {
   route: UserRouteRow;
   onOpen: () => void;
-  onStart: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -36,7 +29,6 @@ interface Props {
 export function MyRouteCard({
   route,
   onOpen,
-  onStart,
   onEdit,
   onDelete,
   onDuplicate,
@@ -46,6 +38,9 @@ export function MyRouteCard({
   const total = stops.length;
   const visited = stops.filter((s) => s.visited).length;
   const progress = total > 0 ? Math.round((visited / total) * 100) : 0;
+  const days = new Set(
+    stops.map((s) => s.planned_day).filter((d): d is number => !!d),
+  ).size;
 
   const sortedStops = [...stops].sort((a, b) => a.stop_order - b.stop_order);
   const cover =
@@ -53,36 +48,6 @@ export function MyRouteCard({
     sortedStops[0]?.establishment?.image_url ||
     sortedStops[0]?.establishment?.logo_url ||
     null;
-
-  const statusBadge = () => {
-    if (route.status === "in_progress")
-      return (
-        <Badge className="bg-primary/10 text-primary border-0 gap-1 text-[10px] py-0 px-2">
-          <Play className="w-3 h-3" /> Em andamento
-        </Badge>
-      );
-    if (route.status === "completed")
-      return (
-        <Badge className="bg-success/10 text-success border-0 gap-1 text-[10px] py-0 px-2">
-          <CheckCircle2 className="w-3 h-3" /> Concluído
-        </Badge>
-      );
-    return (
-      <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-2">
-        <Bookmark className="w-3 h-3" /> Salvo
-      </Badge>
-    );
-  };
-
-  const startLabel =
-    route.status === "in_progress"
-      ? { text: "Continuar", Icon: Play }
-      : route.status === "completed"
-        ? { text: "Refazer", Icon: RotateCcw }
-        : { text: "Iniciar", Icon: Navigation };
-
-  const StartIcon = startLabel.Icon;
-  const canStart = total > 0;
 
   return (
     <div className="relative bg-card rounded-xl border border-border shadow-card overflow-hidden">
@@ -107,36 +72,24 @@ export function MyRouteCard({
             </p>
             <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            {statusBadge()}
-            <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+          <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
               <MapPin className="w-3 h-3" /> {total} {total === 1 ? "parada" : "paradas"}
             </span>
+            {days > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="w-3 h-3" /> {days} {days === 1 ? "dia" : "dias"}
+              </span>
+            )}
           </div>
           <div className="mt-auto pt-2">
             <Progress value={progress} className="h-1.5" />
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {visited}/{total} concluídas
+              {visited}/{total} visitados
             </p>
           </div>
         </div>
       </button>
-
-      {/* Action bar */}
-      <div className="px-3 pb-3 -mt-1">
-        <Button
-          size="sm"
-          className="w-full rounded-full gap-1.5 h-9"
-          disabled={!canStart}
-          onClick={(e) => {
-            e.stopPropagation();
-            onStart();
-          }}
-        >
-          <StartIcon className="w-4 h-4" />
-          {startLabel.text}
-        </Button>
-      </div>
 
       <div className="absolute top-2 right-2">
         <DropdownMenu>

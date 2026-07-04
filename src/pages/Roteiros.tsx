@@ -25,7 +25,6 @@ import {
   useMyRoutes,
   useSuggestedRoutes,
   useCloneSuggestedRoute,
-  useStartRoute,
 } from "@/hooks/useRoutes";
 import type { UserRouteRow } from "@/services/userRoutes";
 import { toast } from "sonner";
@@ -52,7 +51,7 @@ export default function Roteiros() {
   const mine = useMyRoutes();
   const deleteRoute = useDeleteRoute();
   const cloneRoute = useCloneSuggestedRoute();
-  const startRoute = useStartRoute();
+  
 
   const suggestedList = (suggested.data ?? []).filter((r: any) =>
     matchFilter(r.duration, filter),
@@ -82,12 +81,6 @@ export default function Roteiros() {
     }
   };
 
-  const handleStartMine = async (route: UserRouteRow) => {
-    try {
-      await startRoute.mutateAsync(route.id);
-    } catch { /* ok */ }
-    navigate(`/roteiros/${route.id}/navegar?type=user`);
-  };
 
 
   return (
@@ -107,7 +100,7 @@ export default function Roteiros() {
               value="mine"
               className="rounded-full data-[state=active]:bg-card data-[state=active]:shadow-sm"
             >
-              Meus roteiros
+              Minhas listas
             </TabsTrigger>
           </TabsList>
 
@@ -200,7 +193,7 @@ export default function Roteiros() {
                   key={r.id}
                   route={r}
                   onOpen={() => navigate(`/roteiros/${r.id}?type=user`)}
-                  onStart={() => handleStartMine(r)}
+                  
                   onEdit={() => navigate(`/roteiros/${r.id}/editar`)}
                   onDuplicate={() => navigate(`/roteiros/novo?clone=${r.id}`)}
                   onShare={() => handleShare(r)}

@@ -12,6 +12,8 @@ import {
   startUserRoute,
   updateUserRoute,
   updateUserRouteStatus,
+  updateUserRouteStop,
+  type UpdateStopInput,
 } from "@/services/userRoutes";
 
 export const routesKeys = {
@@ -138,6 +140,16 @@ export function useMarkStopVisited() {
   });
 }
 
+export function useUpdateStop() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { stopId: string; input: UpdateStopInput }) => {
+      const { error } = await updateUserRouteStop(vars.stopId, vars.input);
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateMine(qc),
+  });
+}
 export function useUpdateRouteStatus() {
   const qc = useQueryClient();
   return useMutation({
