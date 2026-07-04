@@ -1,53 +1,92 @@
-## Diagnóstico
+# Plano: Roteiros como Planner Pessoal
 
-No preview atual o app **carrega** o Feed corretamente (Supabase respondendo 200, sessão válida, posts renderizando). O sintoma "carrega e depois some após alguns segundos" indica que algo é lançado *depois* do primeiro render — e como **não existe nenhum ErrorBoundary no projeto**, qualquer `throw` em componente / hook / render derruba a árvore inteira para uma tela em branco silenciosa (React 18 unmount total).
+Transforma a página de Roteiros num organizador de "o que visitar" — sem guia estilo Google Maps. Cada parada vira um item de checklist com nota pessoal, dia planejado e prioridade. Roteiros sugeridos continuam como inspiração e podem ser salvos como uma nova lista.
 
-Candidatos que já identifiquei no código lendo os arquivos:
+## Fluxo novo
 
-1. **Sem ErrorBoundary raiz** (`src/App.tsx`). Um único erro em `PostCard`, `LocationContext`, `useRoutes`, etc. apaga o app sem log visível ao usuário.
-2. **Chunks lazy que falham a importar** (`lazy(() => import(...))` em `App.tsx`). Quando o Vite/preview troca de build o import antigo devolve 404 e o Suspense estoura → tela branca. Isso é a causa clássica de "some após alguns segundos" enquanto o usuário navega.
-3. **Warning ruidoso `fetchPriority` em `PostCard.tsx:132`** — não derruba sozinho, mas polui o console e mostra que a atribuição de props de imagem não está limpa.
-4. Nenhum tratamento de erro em `queryFn` (React Query com `retry: 1`) — se um `throw` chegar a componente pai sem boundary, mesma consequência.
+1. `/roteiros` — duas tabs: **Sugeridos** (inspiração, igual hoje) e **Meus roteiros** (agora chamados "Minhas listas").
+2. Ao abrir uma lista minha (`/roteiros/:id?type=user`): visualização de planner, agrupada por Dia (Sem dia, Dia 1, Dia 2...), com progresso `X/Y visitados`.
+3. Cada parada: checkbox de visitado, badge de prioridade, chip de dia, botão de nota (abre sheet com textarea).
+4. Roteiro sugerido: mantém preview + timeline + botão **"Salvar na minha lista"** (clona) — sem "Iniciar".
 
-Nada disso exige mudança de backend/regra de negócio — é resiliência de front-end.
+## Remoções
 
-## O que vou fazer
+- Rota `/roteiros/:id/navegar` + arquivo `src/pages/RoteiroNavigation.tsx` (deletar do `App.tsx` também).
+- Componentes só usados pela navegação guiada: `src/components/map/NavigationView.tsx`, `src/components/routes/HowToGetThereButton.tsx` (verificar uso antes; se usado em outro lugar, manter).
+- CTA "Iniciar roteiro" / "Continuar" / "Refazer" em `RoteiroDetail.tsx`.
+- `useStartRoute` das telas de listagem/detalhe (hook fica no service caso seja usado em outros lugares).
+- Mini-mapa em `RoteiroDetail.tsx` permanece só como referência visual (pins), sem polilinha de rota nem `getMultiLegRoute`.
 
-### 1. Adicionar `ErrorBoundary` global (novo arquivo)
-`src/components/ErrorBoundary.tsx` — classe React clássica com `componentDidCatch` que:
-- loga o erro completo no `console.error` (para aparecer nos logs que consigo ler);
-- detecta erros de chunk (`ChunkLoadError`, mensagem contendo `Failed to fetch dynamically imported module` / `Importing a module script failed`) e, nesses casos, faz `window.location.reload()` **uma única vez** (usando `sessionStorage` como guarda) — resolve a causa #2 automaticamente;
-- caso contrário renderiza um fallback amigável no padrão do design system (card centralizado, botão "Tentar novamente" que reseta o boundary, botão "Voltar ao início").
+## Alterações por arquivo
 
-### 2. Envolver a árvore em `App.tsx`
-Colocar `<ErrorBoundary>` como filho de `QueryClientProvider` e envolvendo `<BrowserRouter>`, para capturar erros em qualquer rota, provider ou lazy chunk sem quebrar o SW/toaster.
+### Banco (Supabase migration)
+Adicionar em `user_route_stops`:
+- `personal_note text`
+- `planned_day smallint` (null = sem dia)
+- `priority text check (priority in ('low','medium','high'))` default `'medium'`
 
-### 3. Suspense por rota com fallback resiliente
-Trocar o `Suspense` único que hoje engloba todas as `<Routes>` por um `<Suspense>` interno + `<ErrorBoundary>` local dentro da árvore, para que uma falha de import de uma página não apague o header/nav — o usuário continua vendo o shell e recebe "não foi possível carregar esta página, recarregar?".
+Sem mudança em RLS (herdada). Incluir `GRANT` explícitos se a tabela ainda não tiver.
 
-### 4. Corrigir warning `fetchPriority` no `PostCard`
-Em `src/components/feed/PostCard.tsx:132` trocar o spread `{...(isFirst ? { fetchPriority: "high" } : {})}` pelo atributo lower-case aceito pelo React DOM (`fetchpriority`) — remove o warning e evita reprocessamento de props em cada render.
+### `src/services/userRoutes.ts`
+- Adicionar `updateUserRouteStop(stopId, { personal_note?, planned_day?, priority? })`.
+- Tipar novos campos em `UserRouteRow.user_route_stops[]`.
 
-### 5. Verificação
-- `bunx tsgo --noEmit` para garantir tipos.
-- Playwright headless: abrir `/`, esperar 15s ociosos, capturar screenshot e conferir que o Feed continua montado; forçar um throw temporário em dev *só localmente durante o teste* para confirmar que o boundary aparece em vez da tela branca (revertido antes de terminar).
-- Ler console logs pós-mudança para confirmar que o warning `fetchPriority` sumiu.
+### `src/hooks/useRoutes.ts`
+- `useUpdateStop()` — mutation que invalida `mine`.
+- Remover uso de `useStartRoute` das telas (hook em si pode ficar).
 
-## Arquivos afetados
+### `src/pages/Roteiros.tsx`
+- Renomear rótulo da tab "Meus roteiros" → "Minhas listas".
+- Remover `handleStartMine` e o botão "Iniciar" dentro do `MyRouteCard` (ajustar props).
+- Mostrar no card: título, capa, `visitados/total` + barra de progresso, chips "N dias planejados" quando houver, ações: Abrir, Editar, Duplicar, Compartilhar, Excluir.
+
+### `src/components/routes/MyRouteCard.tsx`
+- Remover botão/estado de iniciar/continuar. Substituir por "Abrir lista".
+- Progresso baseado em `visited/total`.
+
+### `src/pages/RoteiroDetail.tsx` (planner mode quando `type=user`)
+- Remover: `getMultiLegRoute`, estatísticas de tempo de carro, CTA sticky de iniciar.
+- Manter: capa, descrição, mini-mapa só com pins, botão "Editar lista".
+- Nova seção **Planner**:
+  - Agrupamento por `planned_day` (Sem dia → Dia 1 → Dia 2 …).
+  - Item de parada: checkbox (toggle `markStopVisited`), thumbnail, nome, categoria, chip de dia (Popover para escolher), chip de prioridade (Popover Alta/Média/Baixa com cor), botão nota (ícone StickyNote — abre `Sheet` com `Textarea`, salva via `useUpdateStop`).
+  - Header do grupo mostra `X/Y visitados` do dia.
+- Modo sugerido (`!isUser`): remove CTA "Iniciar", troca por "Salvar na minha lista" (usa clone existente, redireciona para `/roteiros/:novoId?type=user`).
+
+### `src/pages/RoteiroEditor.tsx`
+- Sem mudança funcional obrigatória; apenas garantir que salvar não dependa de iniciar.
+
+### `src/App.tsx`
+- Remover import e `<Route>` de `RoteiroNavigation`.
+
+## Detalhes técnicos
+
+- Optimistic update no checkbox (padrão do projeto): `queryClient.setQueryData` para `routesKeys.mineById(id)` antes do mutate; rollback em erro.
+- Prioridade: cores por token — `high` usa `bg-destructive/10 text-destructive`, `medium` `bg-primary/10 text-primary`, `low` `bg-muted text-muted-foreground`.
+- Dia planejado via `Popover` com botões 1..N + "Sem dia"; N = max(dias atuais)+1 (mínimo 3 opções).
+- Nota em `Sheet` mobile-first, `Textarea` até 280 chars, botão Salvar sticky.
+- Contagem de dias no card = `new Set(stops.map(s => s.planned_day).filter(Boolean)).size`.
+- Manter `max-w-2xl`, `pb-20`, GlobalHeader e BottomNav conforme design system.
+
+## Diagrama do detalhe (planner)
 
 ```text
-src/components/ErrorBoundary.tsx   (novo)
-src/App.tsx                        (edit: envolve com ErrorBoundary + suspense por rota)
-src/components/feed/PostCard.tsx   (edit: fetchpriority lowercase)
+┌─ Capa + título ─────────────────┐
+│ 5/8 visitados · 2 dias planejados│
+├─ mini-mapa (pins, sem rota) ────┤
+├─ [Editar lista]                 │
+│                                 │
+│ Sem dia (2/3)                   │
+│  ☐ Café Colonial   [Alta] [📝]  │
+│  ☑ Mirante         [Média][📝•]│
+│                                 │
+│ Dia 1 (2/3)                     │
+│  ...                            │
+└─────────────────────────────────┘
 ```
 
-## O que NÃO vou mexer
+## Fora de escopo
 
-- Supabase, RLS, schema, edge functions — o backend está respondendo 200.
-- Design system, cores, layout, rotas existentes.
-- Service Worker (`public/sw.js`) — no preview ele nem registra; em produção o cache-first de assets é intencional.
-- Lógica das páginas de Roteiros / Feed / Mapa.
-
-## Observação
-
-Se depois desse fix o boundary começar a aparecer com uma mensagem específica, essa mensagem vira o próximo bug a corrigir — mas primeiro precisamos parar a tela branca silenciosa para conseguir enxergar o erro real.
+- Notificações/lembretes por data.
+- Compartilhamento colaborativo da lista.
+- Estimativas de tempo/distância entre paradas.
