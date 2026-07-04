@@ -51,7 +51,7 @@ export default function Roteiros() {
   const mine = useMyRoutes();
   const deleteRoute = useDeleteRoute();
   const cloneRoute = useCloneSuggestedRoute();
-  const startRoute = useStartRoute();
+  
 
   const suggestedList = (suggested.data ?? []).filter((r: any) =>
     matchFilter(r.duration, filter),
@@ -81,12 +81,6 @@ export default function Roteiros() {
     }
   };
 
-  const handleStartMine = async (route: UserRouteRow) => {
-    try {
-      await startRoute.mutateAsync(route.id);
-    } catch { /* ok */ }
-    navigate(`/roteiros/${route.id}/navegar?type=user`);
-  };
 
 
   return (
