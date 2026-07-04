@@ -150,7 +150,7 @@ export function useUpdateStop() {
     onSuccess: () => invalidateMine(qc),
   });
 }
-
+export function useUpdateRouteStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (vars: { id: string; status: Parameters<typeof updateUserRouteStatus>[1] }) => {
