@@ -193,7 +193,7 @@ export default function Roteiros() {
                   key={r.id}
                   route={r}
                   onOpen={() => navigate(`/roteiros/${r.id}?type=user`)}
-                  onStart={() => handleStartMine(r)}
+                  
                   onEdit={() => navigate(`/roteiros/${r.id}/editar`)}
                   onDuplicate={() => navigate(`/roteiros/novo?clone=${r.id}`)}
                   onShare={() => handleShare(r)}
