@@ -69,7 +69,7 @@ export default function MapSheet({ open, onClose, establishment }: MapSheetProps
 
   const handleOpenExternal = () => {
     const q = `${destLat},${destLng}`;
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${q}`, "_blank");
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${q}`, "_blank", "noopener,noreferrer");
   };
 
   return (

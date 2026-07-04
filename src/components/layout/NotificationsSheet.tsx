@@ -83,7 +83,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
     if (n.redirect_url) {
       onOpenChange(false);
       if (n.redirect_type === "external") {
-        window.open(n.redirect_url, "_blank");
+        window.open(n.redirect_url, "_blank", "noopener,noreferrer");
       } else {
         navigate(n.redirect_url);
       }

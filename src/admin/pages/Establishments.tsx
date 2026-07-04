@@ -310,7 +310,7 @@ export default function Establishments() {
                     <Button variant="ghost" size="icon" title="Editar" onClick={() => navigate(`/admin/estabelecimentos/${est.id}`)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title="Ver no app" onClick={() => window.open(`/estabelecimento/${est.slug}`, "_blank")}>
+                    <Button variant="ghost" size="icon" title="Ver no app" onClick={() => window.open(`/estabelecimento/${est.slug}`, "_blank", "noopener,noreferrer")}>
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" title="Duplicar" onClick={() => handleDuplicate(est.id)}>
