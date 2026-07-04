@@ -23,7 +23,7 @@ const loadExploreCategory = () => import("./pages/ExploreCategory");
 const loadCoupons = () => import("./pages/Coupons");
 const loadRoteiros = () => import("./pages/Roteiros");
 const loadRoteiroDetail = () => import("./pages/RoteiroDetail");
-const loadRoteiroNavigation = () => import("./pages/RoteiroNavigation");
+
 const loadRoteiroEditor = () => import("./pages/RoteiroEditor");
 const loadEstablishment = () => import("./pages/Establishment");
 const loadSavedPlaces = () => import("./pages/profile/SavedPlaces");
@@ -45,7 +45,7 @@ const ExploreCategory = lazy(loadExploreCategory);
 const Coupons = lazy(loadCoupons);
 const Roteiros = lazy(loadRoteiros);
 const RoteiroDetail = lazy(loadRoteiroDetail);
-const RoteiroNavigation = lazy(loadRoteiroNavigation);
+
 const RoteiroEditor = lazy(loadRoteiroEditor);
 const Establishment = lazy(loadEstablishment);
 const SavedPlaces = lazy(loadSavedPlaces);
@@ -91,7 +91,6 @@ function RoutePrefetcher() {
         loadRoteiroEditor,
         loadEstablishment,
         loadExploreCategory,
-        loadRoteiroNavigation,
       ].forEach((fn) => {
         try { fn(); } catch { /* ignore */ }
       });
@@ -183,7 +182,7 @@ const App = () => (
                           <Route path="/roteiros/novo" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
                           <Route path="/roteiros/:id/editar" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
                           <Route path="/roteiros/:id" element={<ProtectedRoute><RoteiroDetail /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id/navegar" element={<ProtectedRoute><RoteiroNavigation /></ProtectedRoute>} />
+                          <Route path="/roteiros/:id/navegar" element={<Navigate to=".." replace />} />
                           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                           <Route path="/estabelecimento/:slug" element={<ProtectedRoute><Establishment /></ProtectedRoute>} />
                           <Route path="/perfil/favoritos" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
