@@ -108,7 +108,7 @@ export function EstablishmentDetailsDrawer({ establishmentId, period, onClose, o
               <Button variant="default" onClick={() => navigate(`/admin/estabelecimentos/${e.id}`)}>
                 <Pencil className="w-4 h-4 mr-1" /> Editar
               </Button>
-              <Button variant="outline" onClick={() => window.open(`/estabelecimento/${e.slug}`, "_blank")}>
+              <Button variant="outline" onClick={() => window.open(`/estabelecimento/${e.slug}`, "_blank", "noopener,noreferrer")}>
                 <ExternalLink className="w-4 h-4 mr-1" /> Ver no app
               </Button>
               <Button variant="outline" onClick={handleDuplicate}>

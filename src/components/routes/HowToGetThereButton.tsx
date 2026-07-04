@@ -71,20 +71,20 @@ export function HowToGetThereButton({
           </DropdownMenuItem>
           {ios && (
             <DropdownMenuItem
-              onClick={() => window.open(buildMapsUrl("apple", { lat: lat!, lng: lng!, name: establishment.name }), "_blank")}
+              onClick={() => window.open(buildMapsUrl("apple", { lat: lat!, lng: lng!, name: establishment.name }), "_blank", "noopener,noreferrer")}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Apple Maps
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            onClick={() => window.open(buildMapsUrl("google", { lat: lat!, lng: lng!, name: establishment.name }), "_blank")}
+            onClick={() => window.open(buildMapsUrl("google", { lat: lat!, lng: lng!, name: establishment.name }), "_blank", "noopener,noreferrer")}
           >
             <ExternalLink className="w-4 h-4 mr-2" />
             Google Maps
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => window.open(buildMapsUrl("waze", { lat: lat!, lng: lng!, name: establishment.name }), "_blank")}
+            onClick={() => window.open(buildMapsUrl("waze", { lat: lat!, lng: lng!, name: establishment.name }), "_blank", "noopener,noreferrer")}
           >
             <ExternalLink className="w-4 h-4 mr-2" />
             Waze
