@@ -147,6 +147,11 @@ export default function RoteiroDetail() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background pt-14">
@@ -365,7 +370,7 @@ export default function RoteiroDetail() {
                     </div>
 
                     <DndContext
-                      sensors={undefined as any}
+                      sensors={sensors}
                       collisionDetection={closestCenter}
                       onDragEnd={handleDragEnd(day)}
                     >
