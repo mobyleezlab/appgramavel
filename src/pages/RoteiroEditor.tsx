@@ -61,11 +61,21 @@ export default function RoteiroEditor() {
     const r: any = existing.data;
     setTitle(r.title);
     setDescription(r.description ?? "");
-    const ordered = (r.user_route_stops ?? [])
-      .sort((a: any, b: any) => a.stop_order - b.stop_order)
-      .map((s: any) => s.establishment as MiniEst)
-      .filter(Boolean);
+    const sorted = (r.user_route_stops ?? []).sort(
+      (a: any, b: any) => a.stop_order - b.stop_order,
+    );
+    const ordered = sorted.map((s: any) => s.establishment as MiniEst).filter(Boolean);
     setStops(ordered);
+    const days: Record<string, number | null> = {};
+    let max = 1;
+    for (const s of sorted) {
+      if (s.establishment?.id) {
+        days[s.establishment.id] = (s.planned_day as number | null) ?? null;
+        if (typeof s.planned_day === "number" && s.planned_day > max) max = s.planned_day;
+      }
+    }
+    setDayByStop(days);
+    setDayCount(max);
   }, [isEdit, existing.data]);
 
   // Hydrate from clone
@@ -73,18 +83,28 @@ export default function RoteiroEditor() {
     if (!cloneFrom) return;
     supabase
       .from("user_routes")
-      .select("title, description, user_route_stops(stop_order, establishment:establishments(*))")
+      .select("title, description, user_route_stops(stop_order, planned_day, establishment:establishments(*))")
       .eq("id", cloneFrom)
       .single()
       .then(({ data }: any) => {
         if (!data) return;
         setTitle(`${data.title} (cópia)`);
         setDescription(data.description ?? "");
-        const ordered = (data.user_route_stops ?? [])
-          .sort((a: any, b: any) => a.stop_order - b.stop_order)
-          .map((s: any) => s.establishment as MiniEst)
-          .filter(Boolean);
+        const sorted = (data.user_route_stops ?? []).sort(
+          (a: any, b: any) => a.stop_order - b.stop_order,
+        );
+        const ordered = sorted.map((s: any) => s.establishment as MiniEst).filter(Boolean);
         setStops(ordered);
+        const days: Record<string, number | null> = {};
+        let max = 1;
+        for (const s of sorted) {
+          if (s.establishment?.id) {
+            days[s.establishment.id] = (s.planned_day as number | null) ?? null;
+            if (typeof s.planned_day === "number" && s.planned_day > max) max = s.planned_day;
+          }
+        }
+        setDayByStop(days);
+        setDayCount(max);
       });
   }, [cloneFrom]);
 
