@@ -309,7 +309,24 @@ export default function RoteiroEditor() {
                       id={s.id}
                       index={i}
                       establishment={s as unknown as Establishment}
-                      onRemove={() => setStops((prev) => prev.filter((p) => p.id !== s.id))}
+                      onRemove={() => {
+                        setStops((prev) => prev.filter((p) => p.id !== s.id));
+                        setDayByStop((prev) => {
+                          const next = { ...prev };
+                          delete next[s.id];
+                          return next;
+                        });
+                      }}
+                      day={dayByStop[s.id] ?? null}
+                      dayOptions={Array.from({ length: dayCount }, (_, k) => k + 1)}
+                      onSetDay={(d) =>
+                        setDayByStop((prev) => ({ ...prev, [s.id]: d }))
+                      }
+                      onAddDay={() => {
+                        const nd = dayCount + 1;
+                        setDayCount(nd);
+                        setDayByStop((prev) => ({ ...prev, [s.id]: nd }));
+                      }}
                     />
                   ))}
                 </div>
