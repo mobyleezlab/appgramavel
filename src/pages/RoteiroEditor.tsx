@@ -148,10 +148,29 @@ export default function RoteiroEditor() {
         .in("id", newIds);
       next = [...next, ...((data as MiniEst[]) ?? [])];
     }
-    // preserve order from selected list
     const orderMap = new Map(ids.map((id, i) => [id, i]));
     next.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
     setStops(next);
+
+    // Assign the newly added stops to the currently highest day so the user
+    // is nudged to think in day-buckets right away.
+    if (newIds.length > 0) {
+      setDayByStop((prev) => {
+        const nextMap = { ...prev };
+        for (const nid of newIds) {
+          if (!(nid in nextMap)) nextMap[nid] = dayCount;
+        }
+        // drop removed
+        for (const rid of removedIds) delete nextMap[rid];
+        return nextMap;
+      });
+    } else if (removedIds.size > 0) {
+      setDayByStop((prev) => {
+        const nextMap = { ...prev };
+        for (const rid of removedIds) delete nextMap[rid];
+        return nextMap;
+      });
+    }
   };
 
   const cover = useMemo(
