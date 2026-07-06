@@ -164,42 +164,59 @@ export default function Roteiros() {
                 <Skeleton key={i} className="h-24 rounded-xl" />
               ))
             ) : myList.length === 0 ? (
-              <EmptyState
-                icon={<Sparkles className="w-7 h-7 text-muted-foreground" />}
-                title="Crie seu primeiro roteiro"
-                description="Personalize sua viagem com seus lugares favoritos"
-                action={
-                  <div className="flex flex-col gap-2 w-full max-w-xs mx-auto">
-                    <Button
-                      className="rounded-full gap-2"
-                      onClick={() => navigate("/roteiros/novo")}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Criar roteiro
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => setTab("suggested")}
-                    >
-                      Personalizar um sugerido
-                    </Button>
-                  </div>
-                }
-              />
+              <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="w-6 h-6 text-primary" />
+                </div>
+                <p className="text-base font-semibold text-foreground mb-1">
+                  Planeje seu próximo passeio
+                </p>
+                <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
+                  Monte uma lista com os lugares que você quer visitar, organize por dia
+                  e vá marcando conforme aproveita.
+                </p>
+                <div className="flex flex-col gap-2 max-w-xs mx-auto">
+                  <Button
+                    className="rounded-full gap-2"
+                    onClick={() => navigate("/roteiros/novo")}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Criar minha primeira lista
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="rounded-full"
+                    onClick={() => setTab("suggested")}
+                  >
+                    Ou começar de um sugerido
+                  </Button>
+                </div>
+              </div>
             ) : (
-              myList.map((r) => (
-                <MyRouteCard
-                  key={r.id}
-                  route={r}
-                  onOpen={() => navigate(`/roteiros/${r.id}?type=user`)}
-                  
-                  onEdit={() => navigate(`/roteiros/${r.id}/editar`)}
-                  onDuplicate={() => navigate(`/roteiros/novo?clone=${r.id}`)}
-                  onShare={() => handleShare(r)}
-                  onDelete={() => setDeleteId(r.id)}
-                />
-              ))
+              <>
+                {myList.map((r) => (
+                  <MyRouteCard
+                    key={r.id}
+                    route={r}
+                    onOpen={() => navigate(`/roteiros/${r.id}?type=user`)}
+                    onEdit={() => navigate(`/roteiros/${r.id}/editar`)}
+                    onDuplicate={() => navigate(`/roteiros/novo?clone=${r.id}`)}
+                    onShare={() => handleShare(r)}
+                    onDelete={() => setDeleteId(r.id)}
+                  />
+                ))}
+                {myList.length === 1 && (
+                  <button
+                    onClick={() => navigate("/roteiros/novo")}
+                    className="w-full rounded-2xl border border-dashed border-border bg-secondary/20 p-4 text-center hover:bg-secondary/40 transition-colors"
+                  >
+                    <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                      <Plus className="w-4 h-4" />
+                      Planejar outro passeio
+                    </div>
+                  </button>
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
