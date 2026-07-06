@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Clock,
@@ -10,7 +10,25 @@ import {
   CalendarDays,
   Flag,
   Check,
+  GripVertical,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +41,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@/components/ui/sheet";
 import RoutePreviewMap from "@/components/routes/RoutePreviewMap";
 import { cn } from "@/lib/utils";
 
@@ -45,24 +56,37 @@ import { toast } from "sonner";
 
 const PRIORITY_META: Record<
   StopPriority,
-  { label: string; className: string; dot: string }
+  { label: string; className: string; dot: string; ring: string }
 > = {
   high: {
     label: "Alta",
     className: "bg-destructive/10 text-destructive border-destructive/20",
     dot: "bg-destructive",
+    ring: "ring-destructive/40",
   },
   medium: {
     label: "Média",
-    className: "bg-primary/10 text-primary border-primary/20",
-    dot: "bg-primary",
+    className: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    dot: "bg-amber-500",
+    ring: "ring-amber-400/40",
   },
   low: {
     label: "Baixa",
-    className: "bg-muted text-muted-foreground border-border",
-    dot: "bg-muted-foreground/60",
+    className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    dot: "bg-emerald-500",
+    ring: "ring-emerald-400/40",
   },
 };
+
+interface StopItem {
+  id: string;
+  stop_order: number;
+  visited: boolean;
+  personal_note: string | null;
+  planned_day: number | null;
+  priority: StopPriority | null;
+  establishment: any;
+}
 
 export default function RoteiroDetail() {
   const { id } = useParams<{ id: string }>();
@@ -76,12 +100,10 @@ export default function RoteiroDetail() {
   const markVisited = useMarkStopVisited();
   const updateStop = useUpdateStop();
 
-  const [noteStop, setNoteStop] = useState<{ id: string; name: string; value: string } | null>(null);
-
   const route: any = isUser ? mine.data : suggested.data;
   const loading = isUser ? mine.isLoading : suggested.isLoading;
 
-  const stops = useMemo(() => {
+  const stops = useMemo<StopItem[]>(() => {
     if (!route) return [];
     const list = isUser ? route.user_route_stops : route.route_stops;
     return (list ?? [])
@@ -90,30 +112,45 @@ export default function RoteiroDetail() {
   }, [route, isUser]);
 
   const validStops = stops.filter((s: any) => s.establishment?.latitude != null);
-  const visitedCount = isUser ? stops.filter((s: any) => s.visited).length : 0;
+  const visitedCount = isUser ? stops.filter((s) => s.visited).length : 0;
+
+  // Local optimistic order used by dnd; synced from server data
+  const [localStops, setLocalStops] = useState<StopItem[]>([]);
+  useEffect(() => {
+    if (isUser) setLocalStops(stops);
+  }, [isUser, stops]);
 
   const grouped = useMemo(() => {
     if (!isUser) return null;
-    const map = new Map<number | null, any[]>();
-    for (const s of stops) {
+    const source = localStops.length ? localStops : stops;
+    const map = new Map<number | null, StopItem[]>();
+    for (const s of source) {
       const key = (s.planned_day as number | null) ?? null;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     }
-    // Order: nulls first, then 1..N
     return Array.from(map.entries()).sort((a, b) => {
       if (a[0] === null) return -1;
       if (b[0] === null) return 1;
       return (a[0] as number) - (b[0] as number);
     });
-  }, [isUser, stops]);
+  }, [isUser, stops, localStops]);
 
   const maxDay = useMemo(() => {
     const nums = stops
-      .map((s: any) => s.planned_day)
-      .filter((d: any) => typeof d === "number") as number[];
+      .map((s) => s.planned_day)
+      .filter((d): d is number => typeof d === "number");
     return nums.length ? Math.max(...nums) : 0;
   }, [stops]);
+
+  // inline note editing
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
 
   if (loading) {
     return (
@@ -123,7 +160,6 @@ export default function RoteiroDetail() {
           <Skeleton className="aspect-[2/1]" />
           <div className="px-4 pt-4 space-y-3">
             <Skeleton className="h-8 w-2/3" />
-            <Skeleton className="h-20 w-full" />
             <Skeleton className="h-48 w-full rounded-xl" />
           </div>
         </main>
@@ -166,22 +202,64 @@ export default function RoteiroDetail() {
     updateStop.mutate({ stopId, input: { priority } });
   };
 
-  const saveNote = () => {
-    if (!noteStop) return;
-    updateStop.mutate(
-      { stopId: noteStop.id, input: { personal_note: noteStop.value.trim() || null } },
-      {
-        onSuccess: () => {
-          toast.success("Nota salva");
-          setNoteStop(null);
-        },
-      },
-    );
+  const startEditNote = (stop: StopItem) => {
+    setEditingNoteId(stop.id);
+    setNoteDraft(stop.personal_note ?? "");
+  };
+
+  const commitNote = (stopId: string) => {
+    const trimmed = noteDraft.trim();
+    updateStop.mutate({
+      stopId,
+      input: { personal_note: trimmed || null },
+    });
+    setEditingNoteId(null);
+  };
+
+  const persistOrder = (ordered: StopItem[]) => {
+    // Re-number stop_order globally based on new order, then persist changed rows.
+    ordered.forEach((s, i) => {
+      const newOrder = i + 1;
+      if (s.stop_order !== newOrder) {
+        updateStop.mutate({ stopId: s.id, input: { stop_order: newOrder } });
+      }
+    });
+  };
+
+  const handleDragEnd = (day: number | null) => (e: DragEndEvent) => {
+    if (!e.over || e.active.id === e.over.id) return;
+    setLocalStops((prev) => {
+      // Reorder within the same day group
+      const sameDay = prev.filter((s) => (s.planned_day ?? null) === day);
+      const oldIdx = sameDay.findIndex((s) => s.id === e.active.id);
+      const newIdx = sameDay.findIndex((s) => s.id === e.over!.id);
+      if (oldIdx < 0 || newIdx < 0) return prev;
+      const reorderedDay = arrayMove(sameDay, oldIdx, newIdx);
+
+      // Rebuild global order: preserve day groups in existing order,
+      // but for the targeted day use the reordered version.
+      const seenDays = new Set<number | null>();
+      const dayOrder: (number | null)[] = [];
+      for (const s of prev) {
+        const k = s.planned_day ?? null;
+        if (!seenDays.has(k)) {
+          seenDays.add(k);
+          dayOrder.push(k);
+        }
+      }
+      const next: StopItem[] = [];
+      for (const d of dayOrder) {
+        if (d === day) next.push(...reorderedDay);
+        else next.push(...prev.filter((s) => (s.planned_day ?? null) === d));
+      }
+      persistOrder(next);
+      return next;
+    });
   };
 
   const dayOptions = Array.from({ length: Math.max(maxDay + 1, 3) }, (_, i) => i + 1);
   const days = new Set(
-    stops.map((s: any) => s.planned_day).filter((d: any) => !!d),
+    stops.map((s) => s.planned_day).filter((d): d is number => !!d),
   ).size;
 
   return (
@@ -223,22 +301,30 @@ export default function RoteiroDetail() {
           </div>
         </div>
 
-        <div className="px-4 pt-4 space-y-5">
+        <div className="px-4 pt-4 space-y-6">
           {route.description && (
             <p className="text-sm text-muted-foreground leading-relaxed">{route.description}</p>
           )}
 
-          {/* Mini map (referência, sem rota) */}
+          {/* Mini map (referência de localização, sem rota guiada) */}
           {validStops.length > 0 && (
-            <RoutePreviewMap
-              stops={validStops.map((s: any) => ({
-                lat: s.establishment.latitude,
-                lng: s.establishment.longitude,
-                name: s.establishment.name,
-              }))}
-              className="rounded-xl overflow-hidden border border-border"
-              height={180}
-            />
+            <div>
+              <RoutePreviewMap
+                stops={validStops.map((s: any) => ({
+                  lat: s.establishment.latitude,
+                  lng: s.establishment.longitude,
+                  name: s.establishment.name,
+                }))}
+                variant={isUser ? "pins" : "route"}
+                className="rounded-xl overflow-hidden border border-border"
+                height={160}
+              />
+              {isUser && (
+                <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+                  Visão geral dos locais — sem ordem de trajeto
+                </p>
+              )}
+            </div>
           )}
 
           {/* CTA */}
@@ -264,160 +350,54 @@ export default function RoteiroDetail() {
 
           {/* Planner (user) OR simple list (suggested) */}
           {isUser && grouped ? (
-            <div className="space-y-5">
+            <div className="space-y-8">
               {grouped.map(([day, items]) => {
                 const groupVisited = items.filter((s) => s.visited).length;
                 return (
                   <section key={String(day)}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        {day === null ? "Sem dia definido" : `Dia ${day}`}
-                      </h3>
-                      <span className="text-[11px] text-muted-foreground">
+                    <div className="flex items-end justify-between mb-3 pb-2 border-b border-border/60">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+                          {day === null ? "A organizar" : `Dia ${day}`}
+                        </p>
+                        <h3 className="text-lg font-bold text-foreground leading-tight">
+                          {day === null ? "Sem dia definido" : `Dia ${day}`}
+                        </h3>
+                      </div>
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
                         {groupVisited}/{items.length} visitados
                       </span>
                     </div>
-                    <div className="space-y-2">
-                      {items.map((s) => {
-                        const e = s.establishment;
-                        if (!e) return null;
-                        const priority = (s.priority as StopPriority | null) ?? "medium";
-                        const pMeta = PRIORITY_META[priority];
-                        const hasNote = !!s.personal_note?.trim();
-                        return (
-                          <div
-                            key={s.id}
-                            className={cn(
-                              "flex items-start gap-3 p-3 bg-card rounded-2xl border border-border/60 transition-opacity",
-                              s.visited && "opacity-70",
-                            )}
-                          >
-                            <Checkbox
-                              checked={!!s.visited}
-                              onCheckedChange={(v) => toggleVisited(s.id, !!v)}
-                              className="mt-1 h-5 w-5"
-                              aria-label={`Marcar ${e.name} como visitado`}
+
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd(day)}
+                    >
+                      <SortableContext
+                        items={items.map((s) => s.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-2.5">
+                          {items.map((s) => (
+                            <StopRow
+                              key={s.id}
+                              stop={s}
+                              editing={editingNoteId === s.id}
+                              noteDraft={noteDraft}
+                              setNoteDraft={setNoteDraft}
+                              onStartEditNote={() => startEditNote(s)}
+                              onCommitNote={() => commitNote(s.id)}
+                              onCancelNote={() => setEditingNoteId(null)}
+                              onToggleVisited={(v) => toggleVisited(s.id, v)}
+                              onSetPriority={(p) => setPriority(s.id, p)}
+                              onSetDay={(d) => setDay(s.id, d)}
+                              dayOptions={dayOptions}
                             />
-                            <div className="w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-secondary">
-                              {(e.image_url || e.logo_url) && (
-                                <img
-                                  src={e.image_url || e.logo_url}
-                                  alt={e.name}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={cn(
-                                  "text-sm font-medium truncate",
-                                  s.visited && "line-through text-muted-foreground",
-                                )}
-                              >
-                                {e.name}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {e.category}
-                              </p>
-
-                              <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                                {/* Priority */}
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button
-                                      className={cn(
-                                        "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border",
-                                        pMeta.className,
-                                      )}
-                                    >
-                                      <Flag className="w-2.5 h-2.5" />
-                                      {pMeta.label}
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-40 p-1" align="start">
-                                    {(Object.keys(PRIORITY_META) as StopPriority[]).map((p) => (
-                                      <button
-                                        key={p}
-                                        onClick={() => setPriority(s.id, p)}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
-                                      >
-                                        <span
-                                          className={cn("w-2 h-2 rounded-full", PRIORITY_META[p].dot)}
-                                        />
-                                        {PRIORITY_META[p].label}
-                                        {priority === p && (
-                                          <Check className="w-3 h-3 ml-auto text-primary" />
-                                        )}
-                                      </button>
-                                    ))}
-                                  </PopoverContent>
-                                </Popover>
-
-                                {/* Day */}
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-border bg-background text-muted-foreground">
-                                      <CalendarDays className="w-2.5 h-2.5" />
-                                      {s.planned_day ? `Dia ${s.planned_day}` : "Sem dia"}
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-40 p-1" align="start">
-                                    <button
-                                      onClick={() => setDay(s.id, null)}
-                                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
-                                    >
-                                      Sem dia
-                                      {!s.planned_day && (
-                                        <Check className="w-3 h-3 ml-auto text-primary" />
-                                      )}
-                                    </button>
-                                    {dayOptions.map((d) => (
-                                      <button
-                                        key={d}
-                                        onClick={() => setDay(s.id, d)}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
-                                      >
-                                        Dia {d}
-                                        {s.planned_day === d && (
-                                          <Check className="w-3 h-3 ml-auto text-primary" />
-                                        )}
-                                      </button>
-                                    ))}
-                                  </PopoverContent>
-                                </Popover>
-
-                                {/* Note */}
-                                <button
-                                  onClick={() =>
-                                    setNoteStop({
-                                      id: s.id,
-                                      name: e.name,
-                                      value: s.personal_note ?? "",
-                                    })
-                                  }
-                                  className={cn(
-                                    "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border",
-                                    hasNote
-                                      ? "bg-primary/10 text-primary border-primary/20"
-                                      : "border-border bg-background text-muted-foreground",
-                                  )}
-                                >
-                                  <StickyNote className="w-2.5 h-2.5" />
-                                  {hasNote ? "Nota" : "Nota"}
-                                </button>
-                              </div>
-
-                              {hasNote && (
-                                <p className="mt-2 text-[11px] text-muted-foreground italic bg-secondary/50 rounded-md p-2 leading-snug">
-                                  {s.personal_note}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
                   </section>
                 );
               })}
@@ -461,37 +441,213 @@ export default function RoteiroDetail() {
         </div>
       </main>
 
-      {/* Nota sheet */}
-      <Sheet open={!!noteStop} onOpenChange={(v) => !v && setNoteStop(null)}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle>Nota — {noteStop?.name}</SheetTitle>
-          </SheetHeader>
-          <div className="py-4">
+      <BottomNav />
+    </div>
+  );
+}
+
+/* -------- Sortable stop row (checklist card) -------- */
+
+interface StopRowProps {
+  stop: StopItem;
+  editing: boolean;
+  noteDraft: string;
+  setNoteDraft: (v: string) => void;
+  onStartEditNote: () => void;
+  onCommitNote: () => void;
+  onCancelNote: () => void;
+  onToggleVisited: (v: boolean) => void;
+  onSetPriority: (p: StopPriority) => void;
+  onSetDay: (d: number | null) => void;
+  dayOptions: number[];
+}
+
+function StopRow({
+  stop,
+  editing,
+  noteDraft,
+  setNoteDraft,
+  onStartEditNote,
+  onCommitNote,
+  onCancelNote,
+  onToggleVisited,
+  onSetPriority,
+  onSetDay,
+  dayOptions,
+}: StopRowProps) {
+  const sortable = useSortable({ id: stop.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = sortable;
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const e = stop.establishment;
+  if (!e) return null;
+  const priority = (stop.priority as StopPriority | null) ?? "medium";
+  const pMeta = PRIORITY_META[priority];
+  const hasNote = !!stop.personal_note?.trim();
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-start gap-3 p-3 bg-card rounded-2xl border border-border/60 transition-all",
+        stop.visited && "opacity-70",
+        isDragging && "shadow-lg z-10",
+      )}
+    >
+      <div className="pt-0.5">
+        <Checkbox
+          checked={!!stop.visited}
+          onCheckedChange={(v) => onToggleVisited(!!v)}
+          className="h-6 w-6 rounded-md"
+          aria-label={`Marcar ${e.name} como visitado`}
+        />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p
+              className={cn(
+                "text-[15px] font-semibold leading-tight",
+                stop.visited && "line-through text-muted-foreground",
+              )}
+            >
+              {e.name}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{e.category}</p>
+          </div>
+
+          {/* Priority tag (tap to edit) */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className={cn(
+                  "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full border shrink-0",
+                  pMeta.className,
+                )}
+                aria-label={`Prioridade ${pMeta.label}`}
+              >
+                <Flag className="w-2.5 h-2.5" />
+                {pMeta.label}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-1" align="end">
+              {(Object.keys(PRIORITY_META) as StopPriority[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => onSetPriority(p)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
+                >
+                  <span className={cn("w-2 h-2 rounded-full", PRIORITY_META[p].dot)} />
+                  {PRIORITY_META[p].label}
+                  {priority === p && (
+                    <Check className="w-3 h-3 ml-auto text-primary" />
+                  )}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Personal note — italic, inline editable */}
+        {editing ? (
+          <div className="mt-2">
             <Textarea
-              value={noteStop?.value ?? ""}
-              onChange={(e) =>
-                setNoteStop((prev) =>
-                  prev ? { ...prev, value: e.target.value.slice(0, 280) } : prev,
-                )
-              }
+              autoFocus
+              value={noteDraft}
+              onChange={(ev) => setNoteDraft(ev.target.value.slice(0, 280))}
+              onBlur={onCommitNote}
+              onKeyDown={(ev) => {
+                if (ev.key === "Escape") {
+                  ev.preventDefault();
+                  onCancelNote();
+                }
+                if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+                  ev.preventDefault();
+                  onCommitNote();
+                }
+              }}
+              rows={2}
               placeholder="Ex: reservar mesa, chegar antes do pôr-do-sol…"
-              rows={4}
-              className="resize-none"
+              className="resize-none text-xs italic"
             />
-            <p className="text-[11px] text-muted-foreground text-right mt-1">
-              {noteStop?.value.length ?? 0}/280
+            <p className="text-[10px] text-muted-foreground text-right mt-1">
+              {noteDraft.length}/280 · toque fora para salvar
             </p>
           </div>
-          <SheetFooter>
-            <Button className="w-full rounded-full" onClick={saveNote}>
-              Salvar nota
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+        ) : hasNote ? (
+          <button
+            onClick={onStartEditNote}
+            className="mt-2 w-full text-left text-[12px] italic text-muted-foreground bg-secondary/50 rounded-md px-2 py-1.5 leading-snug hover:bg-secondary transition-colors"
+          >
+            {stop.personal_note}
+          </button>
+        ) : (
+          <button
+            onClick={onStartEditNote}
+            className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <StickyNote className="w-3 h-3" />
+            Adicionar nota
+          </button>
+        )}
 
-      <BottomNav />
+        {/* Move to another day */}
+        <div className="mt-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-border bg-background text-muted-foreground hover:bg-secondary transition-colors">
+                <CalendarDays className="w-2.5 h-2.5" />
+                {stop.planned_day ? `Dia ${stop.planned_day}` : "Sem dia"}
+                <ChevronDown className="w-2.5 h-2.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-1" align="start">
+              <button
+                onClick={() => onSetDay(null)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
+              >
+                Sem dia
+                {!stop.planned_day && <Check className="w-3 h-3 ml-auto text-primary" />}
+              </button>
+              {dayOptions.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => onSetDay(d)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
+                >
+                  Dia {d}
+                  {stop.planned_day === d && (
+                    <Check className="w-3 h-3 ml-auto text-primary" />
+                  )}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="p-1 -mr-1 text-muted-foreground/60 hover:text-muted-foreground touch-none cursor-grab active:cursor-grabbing"
+        aria-label="Reordenar parada"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
     </div>
   );
 }

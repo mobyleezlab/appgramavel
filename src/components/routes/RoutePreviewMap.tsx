@@ -17,6 +17,12 @@ interface Props {
   polyline?: [number, number][]; // [lat,lng]
   className?: string;
   height?: number;
+  /**
+   * "route" (default): draws polyline between stops, pins numbered A / n / B.
+   * "pins": scattered dot pins only — no line, no ordering hint. Use for
+   * planner previews where the route is not a guided sequence.
+   */
+  variant?: "route" | "pins";
 }
 
 function numberedIcon(n: number, isFirst: boolean, isLast: boolean) {
@@ -41,7 +47,28 @@ function numberedIcon(n: number, isFirst: boolean, isLast: boolean) {
   });
 }
 
-export default function RoutePreviewMap({ stops, polyline, className, height = 192 }: Props) {
+function dotIcon() {
+  return L.divIcon({
+    className: "",
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    html: `
+      <div style="
+        width:14px;height:14px;background:hsl(233,100%,69%);
+        border:2px solid white;border-radius:9999px;
+        box-shadow:0 2px 6px rgba(0,0,0,0.25);
+      "></div>
+    `,
+  });
+}
+
+export default function RoutePreviewMap({
+  stops,
+  polyline,
+  className,
+  height = 192,
+  variant = "route",
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
@@ -83,27 +110,31 @@ export default function RoutePreviewMap({ stops, polyline, className, height = 1
     if (stops.length === 0) return;
 
     stops.forEach((s, i) => {
-      L.marker([s.lat, s.lng], {
-        icon: numberedIcon(i + 1, i === 0, i === stops.length - 1 && stops.length > 1),
-      }).addTo(group);
+      const icon =
+        variant === "pins"
+          ? dotIcon()
+          : numberedIcon(i + 1, i === 0, i === stops.length - 1 && stops.length > 1);
+      L.marker([s.lat, s.lng], { icon }).addTo(group);
     });
 
-    const points: L.LatLngExpression[] = (
-      polyline && polyline.length > 1 ? polyline : stops.map((s) => [s.lat, s.lng])
-    ) as L.LatLngExpression[];
+    if (variant === "route") {
+      const points: L.LatLngExpression[] = (
+        polyline && polyline.length > 1 ? polyline : stops.map((s) => [s.lat, s.lng])
+      ) as L.LatLngExpression[];
 
-    if (points.length > 1) {
-      L.polyline(points, {
-        color: "hsl(233,100%,69%)",
-        weight: 4,
-        opacity: 0.85,
-        dashArray: polyline && polyline.length > 1 ? undefined : "6 8",
-      }).addTo(group);
+      if (points.length > 1) {
+        L.polyline(points, {
+          color: "hsl(233,100%,69%)",
+          weight: 4,
+          opacity: 0.85,
+          dashArray: polyline && polyline.length > 1 ? undefined : "6 8",
+        }).addTo(group);
+      }
     }
 
     const bounds = L.latLngBounds(stops.map((s) => [s.lat, s.lng] as [number, number]));
     map.fitBounds(bounds, { padding: [32, 32], maxZoom: 15 });
-  }, [stops, polyline]);
+  }, [stops, polyline, variant]);
 
   return <div ref={containerRef} className={className} style={{ height }} />;
 }

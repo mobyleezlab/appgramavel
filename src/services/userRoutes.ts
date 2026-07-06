@@ -34,6 +34,8 @@ export interface UpdateStopInput {
   personal_note?: string | null;
   planned_day?: number | null;
   priority?: StopPriority | null;
+  stop_order?: number;
+  visited?: boolean;
 }
 
 export async function updateUserRouteStop(stopId: string, input: UpdateStopInput) {
@@ -50,7 +52,7 @@ export async function getUserRoutes(userId?: string) {
   return supabase
     .from("user_routes")
     .select(
-      "*, user_route_stops(id, stop_order, visited, visited_at, establishment:establishments(*))",
+      "*, user_route_stops(id, stop_order, visited, visited_at, personal_note, planned_day, priority, establishment:establishments(*))",
     )
     .eq("user_id", uid)
     .order("created_at", { ascending: false });
@@ -60,7 +62,7 @@ export async function getUserRouteById(id: string) {
   return supabase
     .from("user_routes")
     .select(
-      "*, user_route_stops(id, stop_order, visited, visited_at, establishment:establishments(*))",
+      "*, user_route_stops(id, stop_order, visited, visited_at, personal_note, planned_day, priority, establishment:establishments(*))",
     )
     .eq("id", id)
     .single();

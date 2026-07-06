@@ -20,6 +20,7 @@ import { AddStopSheet } from "@/components/routes/AddStopSheet";
 import RoutePreviewMap from "@/components/routes/RoutePreviewMap";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateRoute, useMyRoute, useUpdateRoute } from "@/hooks/useRoutes";
+import { updateUserRouteStop } from "@/services/userRoutes";
 import { getMultiLegRoute, formatKm, formatMin } from "@/lib/routeEstimates";
 import type { Establishment } from "@/data/mock";
 import { toast } from "sonner";
@@ -48,6 +49,8 @@ export default function RoteiroEditor() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [stops, setStops] = useState<MiniEst[]>([]);
+  const [dayByStop, setDayByStop] = useState<Record<string, number | null>>({});
+  const [dayCount, setDayCount] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [estimate, setEstimate] = useState<{ km: number; min: number; coords: [number, number][] } | null>(null);
@@ -58,11 +61,21 @@ export default function RoteiroEditor() {
     const r: any = existing.data;
     setTitle(r.title);
     setDescription(r.description ?? "");
-    const ordered = (r.user_route_stops ?? [])
-      .sort((a: any, b: any) => a.stop_order - b.stop_order)
-      .map((s: any) => s.establishment as MiniEst)
-      .filter(Boolean);
+    const sorted = (r.user_route_stops ?? []).sort(
+      (a: any, b: any) => a.stop_order - b.stop_order,
+    );
+    const ordered = sorted.map((s: any) => s.establishment as MiniEst).filter(Boolean);
     setStops(ordered);
+    const days: Record<string, number | null> = {};
+    let max = 1;
+    for (const s of sorted) {
+      if (s.establishment?.id) {
+        days[s.establishment.id] = (s.planned_day as number | null) ?? null;
+        if (typeof s.planned_day === "number" && s.planned_day > max) max = s.planned_day;
+      }
+    }
+    setDayByStop(days);
+    setDayCount(max);
   }, [isEdit, existing.data]);
 
   // Hydrate from clone
@@ -70,18 +83,28 @@ export default function RoteiroEditor() {
     if (!cloneFrom) return;
     supabase
       .from("user_routes")
-      .select("title, description, user_route_stops(stop_order, establishment:establishments(*))")
+      .select("title, description, user_route_stops(stop_order, planned_day, establishment:establishments(*))")
       .eq("id", cloneFrom)
       .single()
       .then(({ data }: any) => {
         if (!data) return;
         setTitle(`${data.title} (cópia)`);
         setDescription(data.description ?? "");
-        const ordered = (data.user_route_stops ?? [])
-          .sort((a: any, b: any) => a.stop_order - b.stop_order)
-          .map((s: any) => s.establishment as MiniEst)
-          .filter(Boolean);
+        const sorted = (data.user_route_stops ?? []).sort(
+          (a: any, b: any) => a.stop_order - b.stop_order,
+        );
+        const ordered = sorted.map((s: any) => s.establishment as MiniEst).filter(Boolean);
         setStops(ordered);
+        const days: Record<string, number | null> = {};
+        let max = 1;
+        for (const s of sorted) {
+          if (s.establishment?.id) {
+            days[s.establishment.id] = (s.planned_day as number | null) ?? null;
+            if (typeof s.planned_day === "number" && s.planned_day > max) max = s.planned_day;
+          }
+        }
+        setDayByStop(days);
+        setDayCount(max);
       });
   }, [cloneFrom]);
 
@@ -125,10 +148,29 @@ export default function RoteiroEditor() {
         .in("id", newIds);
       next = [...next, ...((data as MiniEst[]) ?? [])];
     }
-    // preserve order from selected list
     const orderMap = new Map(ids.map((id, i) => [id, i]));
     next.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
     setStops(next);
+
+    // Assign the newly added stops to the currently highest day so the user
+    // is nudged to think in day-buckets right away.
+    if (newIds.length > 0) {
+      setDayByStop((prev) => {
+        const nextMap = { ...prev };
+        for (const nid of newIds) {
+          if (!(nid in nextMap)) nextMap[nid] = dayCount;
+        }
+        // drop removed
+        for (const rid of removedIds) delete nextMap[rid];
+        return nextMap;
+      });
+    } else if (removedIds.size > 0) {
+      setDayByStop((prev) => {
+        const nextMap = { ...prev };
+        for (const rid of removedIds) delete nextMap[rid];
+        return nextMap;
+      });
+    }
   };
 
   const cover = useMemo(
@@ -137,6 +179,23 @@ export default function RoteiroEditor() {
   );
 
   const canSave = title.trim().length > 0 && stops.length > 0;
+
+  const persistDays = async (routeId: string) => {
+    // Re-fetch to get stop IDs, then update planned_day per stop.
+    const { data } = await supabase
+      .from("user_route_stops")
+      .select("id, establishment_id, stop_order")
+      .eq("user_route_id", routeId)
+      .order("stop_order", { ascending: true });
+    if (!data) return;
+    await Promise.all(
+      data.map((row: any) => {
+        const day = dayByStop[row.establishment_id];
+        if (day === undefined) return Promise.resolve();
+        return updateUserRouteStop(row.id, { planned_day: day ?? null });
+      }),
+    );
+  };
 
   const onSave = async () => {
     if (!canSave) return;
@@ -153,6 +212,7 @@ export default function RoteiroEditor() {
           },
           stopIds: stops.map((s) => s.id),
         });
+        await persistDays(id);
         toast.success("Roteiro atualizado!");
         navigate(`/roteiros/${id}?type=user`);
       } else {
@@ -164,9 +224,14 @@ export default function RoteiroEditor() {
           estimatedDistanceKm: estimate?.km ?? null,
           estimatedDurationMin: estimate?.min ?? null,
         });
-        toast.success("Roteiro criado!");
-        if (created?.id) navigate(`/roteiros/${created.id}?type=user`);
-        else navigate("/roteiros");
+        if (created?.id) {
+          await persistDays(created.id);
+          toast.success("Roteiro criado!");
+          navigate(`/roteiros/${created.id}?type=user`);
+        } else {
+          toast.success("Roteiro criado!");
+          navigate("/roteiros");
+        }
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Erro ao salvar");
@@ -244,7 +309,24 @@ export default function RoteiroEditor() {
                       id={s.id}
                       index={i}
                       establishment={s as unknown as Establishment}
-                      onRemove={() => setStops((prev) => prev.filter((p) => p.id !== s.id))}
+                      onRemove={() => {
+                        setStops((prev) => prev.filter((p) => p.id !== s.id));
+                        setDayByStop((prev) => {
+                          const next = { ...prev };
+                          delete next[s.id];
+                          return next;
+                        });
+                      }}
+                      day={dayByStop[s.id] ?? null}
+                      dayOptions={Array.from({ length: dayCount }, (_, k) => k + 1)}
+                      onSetDay={(d) =>
+                        setDayByStop((prev) => ({ ...prev, [s.id]: d }))
+                      }
+                      onAddDay={() => {
+                        const nd = dayCount + 1;
+                        setDayCount(nd);
+                        setDayByStop((prev) => ({ ...prev, [s.id]: nd }));
+                      }}
                     />
                   ))}
                 </div>
