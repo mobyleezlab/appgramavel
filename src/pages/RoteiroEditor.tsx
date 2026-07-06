@@ -180,6 +180,23 @@ export default function RoteiroEditor() {
 
   const canSave = title.trim().length > 0 && stops.length > 0;
 
+  const persistDays = async (routeId: string) => {
+    // Re-fetch to get stop IDs, then update planned_day per stop.
+    const { data } = await supabase
+      .from("user_route_stops")
+      .select("id, establishment_id, stop_order")
+      .eq("user_route_id", routeId)
+      .order("stop_order", { ascending: true });
+    if (!data) return;
+    await Promise.all(
+      data.map((row: any) => {
+        const day = dayByStop[row.establishment_id];
+        if (day === undefined) return Promise.resolve();
+        return updateUserRouteStop(row.id, { planned_day: day ?? null });
+      }),
+    );
+  };
+
   const onSave = async () => {
     if (!canSave) return;
     try {
@@ -195,6 +212,7 @@ export default function RoteiroEditor() {
           },
           stopIds: stops.map((s) => s.id),
         });
+        await persistDays(id);
         toast.success("Roteiro atualizado!");
         navigate(`/roteiros/${id}?type=user`);
       } else {
@@ -206,9 +224,14 @@ export default function RoteiroEditor() {
           estimatedDistanceKm: estimate?.km ?? null,
           estimatedDurationMin: estimate?.min ?? null,
         });
-        toast.success("Roteiro criado!");
-        if (created?.id) navigate(`/roteiros/${created.id}?type=user`);
-        else navigate("/roteiros");
+        if (created?.id) {
+          await persistDays(created.id);
+          toast.success("Roteiro criado!");
+          navigate(`/roteiros/${created.id}?type=user`);
+        } else {
+          toast.success("Roteiro criado!");
+          navigate("/roteiros");
+        }
       }
     } catch (e: any) {
       toast.error(e?.message ?? "Erro ao salvar");
