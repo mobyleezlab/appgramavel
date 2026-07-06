@@ -20,6 +20,7 @@ import { AddStopSheet } from "@/components/routes/AddStopSheet";
 import RoutePreviewMap from "@/components/routes/RoutePreviewMap";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateRoute, useMyRoute, useUpdateRoute } from "@/hooks/useRoutes";
+import { updateUserRouteStop } from "@/services/userRoutes";
 import { getMultiLegRoute, formatKm, formatMin } from "@/lib/routeEstimates";
 import type { Establishment } from "@/data/mock";
 import { toast } from "sonner";
@@ -48,6 +49,8 @@ export default function RoteiroEditor() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [stops, setStops] = useState<MiniEst[]>([]);
+  const [dayByStop, setDayByStop] = useState<Record<string, number | null>>({});
+  const [dayCount, setDayCount] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [estimate, setEstimate] = useState<{ km: number; min: number; coords: [number, number][] } | null>(null);
