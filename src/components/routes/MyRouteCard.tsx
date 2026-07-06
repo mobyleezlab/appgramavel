@@ -1,12 +1,11 @@
 import {
-  ChevronRight,
-  MapPin,
   MoreVertical,
   CalendarDays,
   Trash2,
   Edit3,
   Copy,
   Share2,
+  CheckCircle2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -15,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { UserRouteRow } from "@/services/userRoutes";
+import type { UserRouteRow, StopPriority } from "@/services/userRoutes";
 
 interface Props {
   route: UserRouteRow;
@@ -25,6 +24,18 @@ interface Props {
   onDuplicate: () => void;
   onShare: () => void;
 }
+
+const PRIORITY_DOT: Record<StopPriority, string> = {
+  high: "bg-destructive",
+  medium: "bg-primary",
+  low: "bg-emerald-500",
+};
+
+const PRIORITY_LABEL: Record<StopPriority, string> = {
+  high: "alta",
+  medium: "média",
+  low: "baixa",
+};
 
 export function MyRouteCard({
   route,
@@ -38,64 +49,76 @@ export function MyRouteCard({
   const total = stops.length;
   const visited = stops.filter((s) => s.visited).length;
   const progress = total > 0 ? Math.round((visited / total) * 100) : 0;
-  const days = new Set(
-    stops.map((s) => s.planned_day).filter((d): d is number => !!d),
-  ).size;
 
-  const sortedStops = [...stops].sort((a, b) => a.stop_order - b.stop_order);
-  const cover =
-    route.cover_url ||
-    sortedStops[0]?.establishment?.image_url ||
-    sortedStops[0]?.establishment?.logo_url ||
-    null;
+  const maxDay = stops.reduce(
+    (acc, s) => (typeof s.planned_day === "number" && s.planned_day > acc ? s.planned_day : acc),
+    0,
+  );
+
+  const priorityCounts = stops.reduce(
+    (acc, s) => {
+      const p = (s.priority ?? "medium") as StopPriority;
+      acc[p] += 1;
+      return acc;
+    },
+    { high: 0, medium: 0, low: 0 } as Record<StopPriority, number>,
+  );
 
   return (
-    <div className="relative bg-card rounded-xl border border-border shadow-card overflow-hidden">
+    <div className="relative bg-card rounded-2xl border border-border/70 shadow-card overflow-hidden">
       <button
         onClick={onOpen}
-        className="w-full flex items-stretch gap-3 p-3 active:scale-[0.99] transition-transform text-left"
+        className="w-full text-left p-4 active:scale-[0.995] transition-transform"
       >
-        <div className="w-20 h-20 rounded-xl overflow-hidden bg-secondary shrink-0">
-          {cover && (
-            <img
-              src={cover}
-              alt={route.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
-          )}
+        <div className="flex items-start justify-between gap-3 pr-8">
+          <h3 className="font-semibold text-foreground text-[15px] leading-snug flex-1 min-w-0">
+            {route.title}
+          </h3>
         </div>
-        <div className="flex-1 min-w-0 py-0.5 flex flex-col">
-          <div className="flex items-start gap-2 pr-8">
-            <p className="font-semibold text-foreground text-sm truncate flex-1">
-              {route.title}
-            </p>
-            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-          </div>
-          <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <MapPin className="w-3 h-3" /> {total} {total === 1 ? "parada" : "paradas"}
-            </span>
-            {days > 0 && (
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="w-3 h-3" /> {days} {days === 1 ? "dia" : "dias"}
+
+        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <CalendarDays className="w-3 h-3" />
+            {maxDay > 0
+              ? `${maxDay} ${maxDay === 1 ? "dia" : "dias"} planejados`
+              : "Sem dias definidos"}
+          </span>
+        </div>
+
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <CheckCircle2 className="w-3 h-3" />
+              <span className="tabular-nums">
+                {visited} de {total} visitados
               </span>
+            </span>
+            <span className="text-muted-foreground tabular-nums">{progress}%</span>
+          </div>
+          <Progress value={progress} className="h-1.5" />
+        </div>
+
+        {total > 0 && (
+          <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
+            {(["high", "medium", "low"] as StopPriority[]).map((p) =>
+              priorityCounts[p] > 0 ? (
+                <span key={p} className="inline-flex items-center gap-1">
+                  <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[p]}`} />
+                  <span className="tabular-nums">
+                    {priorityCounts[p]} {PRIORITY_LABEL[p]}
+                  </span>
+                </span>
+              ) : null,
             )}
           </div>
-          <div className="mt-auto pt-2">
-            <Progress value={progress} className="h-1.5" />
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {visited}/{total} visitados
-            </p>
-          </div>
-        </div>
+        )}
       </button>
 
       <div className="absolute top-2 right-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="p-2 rounded-full bg-background/80 backdrop-blur hover:bg-secondary transition-colors"
+              className="p-2 rounded-full hover:bg-secondary transition-colors"
               aria-label="Mais opções"
               onClick={(e) => e.stopPropagation()}
             >
