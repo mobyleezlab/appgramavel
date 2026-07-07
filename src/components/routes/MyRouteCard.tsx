@@ -1,13 +1,11 @@
 import {
   MoreVertical,
-  CalendarDays,
   Trash2,
   Edit3,
   Copy,
   Share2,
-  CheckCircle2,
+  ChevronRight,
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,14 +25,8 @@ interface Props {
 
 const PRIORITY_DOT: Record<StopPriority, string> = {
   high: "bg-destructive",
-  medium: "bg-primary",
+  medium: "bg-amber-500",
   low: "bg-emerald-500",
-};
-
-const PRIORITY_LABEL: Record<StopPriority, string> = {
-  high: "alta",
-  medium: "média",
-  low: "baixa",
 };
 
 export function MyRouteCard({
@@ -48,7 +40,6 @@ export function MyRouteCard({
   const stops = route.user_route_stops ?? [];
   const total = stops.length;
   const visited = stops.filter((s) => s.visited).length;
-  const progress = total > 0 ? Math.round((visited / total) * 100) : 0;
 
   const maxDay = stops.reduce(
     (acc, s) => (typeof s.planned_day === "number" && s.planned_day > acc ? s.planned_day : acc),
@@ -57,93 +48,76 @@ export function MyRouteCard({
 
   const priorityCounts = stops.reduce(
     (acc, s) => {
-      const p = (s.priority ?? "medium") as StopPriority;
-      acc[p] += 1;
+      const p = (s.priority ?? null) as StopPriority | null;
+      if (p) acc[p] += 1;
       return acc;
     },
     { high: 0, medium: 0, low: 0 } as Record<StopPriority, number>,
   );
 
+  const meta = [
+    total > 0 ? `${visited} de ${total} visitados` : "Nenhuma parada",
+    maxDay > 0 ? `${maxDay} ${maxDay === 1 ? "dia" : "dias"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="relative bg-card rounded-2xl border border-border/70 shadow-card overflow-hidden">
+    <div className="relative flex items-center gap-2">
       <button
         onClick={onOpen}
-        className="w-full text-left p-4 active:scale-[0.995] transition-transform"
+        className="flex-1 flex items-center gap-3 py-3 pl-4 pr-2 text-left min-w-0 active:bg-secondary/40 transition-colors"
       >
-        <div className="flex items-start justify-between gap-3 pr-8">
-          <h3 className="font-semibold text-foreground text-[15px] leading-snug flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-medium text-foreground truncate">
             {route.title}
-          </h3>
+          </p>
+          <p className="text-xs text-muted-foreground truncate">{meta}</p>
         </div>
 
-        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <CalendarDays className="w-3 h-3" />
-            {maxDay > 0
-              ? `${maxDay} ${maxDay === 1 ? "dia" : "dias"} planejados`
-              : "Sem dias definidos"}
-          </span>
+        <div className="flex items-center gap-1 shrink-0">
+          {(["high", "medium", "low"] as StopPriority[]).map((p) =>
+            priorityCounts[p] > 0 ? (
+              <span
+                key={p}
+                className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[p]}`}
+                aria-hidden
+              />
+            ) : null,
+          )}
         </div>
 
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="inline-flex items-center gap-1 text-muted-foreground">
-              <CheckCircle2 className="w-3 h-3" />
-              <span className="tabular-nums">
-                {visited} de {total} visitados
-              </span>
-            </span>
-            <span className="text-muted-foreground tabular-nums">{progress}%</span>
-          </div>
-          <Progress value={progress} className="h-1.5" />
-        </div>
-
-        {total > 0 && (
-          <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
-            {(["high", "medium", "low"] as StopPriority[]).map((p) =>
-              priorityCounts[p] > 0 ? (
-                <span key={p} className="inline-flex items-center gap-1">
-                  <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[p]}`} />
-                  <span className="tabular-nums">
-                    {priorityCounts[p]} {PRIORITY_LABEL[p]}
-                  </span>
-                </span>
-              ) : null,
-            )}
-          </div>
-        )}
+        <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
       </button>
 
-      <div className="absolute top-2 right-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="p-2 rounded-full hover:bg-secondary transition-colors"
-              aria-label="Mais opções"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit3 className="w-4 h-4 mr-2" /> Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDuplicate}>
-              <Copy className="w-4 h-4 mr-2" /> Duplicar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onShare}>
-              <Share2 className="w-4 h-4 mr-2" /> Compartilhar
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" /> Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="p-2 mr-1 rounded-full text-muted-foreground/60 hover:bg-secondary hover:text-foreground transition-colors"
+            aria-label="Mais opções"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem onClick={onEdit}>
+            <Edit3 className="w-4 h-4 mr-2" /> Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onDuplicate}>
+            <Copy className="w-4 h-4 mr-2" /> Duplicar
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onShare}>
+            <Share2 className="w-4 h-4 mr-2" /> Compartilhar
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onDelete}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
