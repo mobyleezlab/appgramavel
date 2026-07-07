@@ -73,17 +73,14 @@ function RoutePrefetcher() {
       [
         loadExplore,
         loadCoupons,
-        loadRoteiros,
         loadSavedPlaces,
         loadCheckIns,
-        loadRoutesPage,
         loadSettings,
         loadUserCoupons,
-        loadRoteiroDetail,
-        loadRoteiroEditor,
         loadEstablishment,
         loadExploreCategory,
       ].forEach((fn) => {
+
         try { fn(); } catch { /* ignore */ }
       });
     });
