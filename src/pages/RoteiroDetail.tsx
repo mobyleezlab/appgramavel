@@ -487,6 +487,7 @@ function StopRow({
   const e = stop.establishment;
   if (!e) return null;
   const priority = (stop.priority as StopPriority | null) ?? "medium";
+  const hasPriority = !!stop.priority;
   const pMeta = PRIORITY_META[priority];
   const hasNote = !!stop.personal_note?.trim();
 
@@ -495,69 +496,63 @@ function StopRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-start gap-3 p-3 bg-card rounded-2xl border border-border/60 transition-all",
-        stop.visited && "opacity-70",
-        isDragging && "shadow-lg z-10",
+        "group relative flex items-start gap-3 pl-4 pr-2 py-3 border-b border-border/40 bg-background transition-colors",
+        isDragging && "shadow-sm z-10 bg-card",
       )}
     >
+      {/* Priority bar (tap to change) */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            className={cn(
+              "absolute left-0 top-2 bottom-2 w-[3px] rounded-r-sm",
+              hasPriority ? pMeta.bar : "bg-transparent",
+            )}
+            aria-label={`Prioridade ${pMeta.label}`}
+          />
+        </PopoverTrigger>
+        <PopoverContent className="w-40 p-1" align="start">
+          {(Object.keys(PRIORITY_META) as StopPriority[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => onSetPriority(p)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
+            >
+              <span className={cn("w-2 h-2 rounded-full", PRIORITY_META[p].dot)} />
+              {PRIORITY_META[p].label}
+              {priority === p && (
+                <Check className="w-3 h-3 ml-auto text-primary" />
+              )}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
+
       <div className="pt-0.5">
         <Checkbox
           checked={!!stop.visited}
           onCheckedChange={(v) => onToggleVisited(!!v)}
-          className="h-6 w-6 rounded-md"
+          className="h-5 w-5 rounded"
           aria-label={`Marcar ${e.name} como visitado`}
         />
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p
-              className={cn(
-                "text-[15px] font-semibold leading-tight",
-                stop.visited && "line-through text-muted-foreground",
-              )}
-            >
-              {e.name}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{e.category}</p>
-          </div>
+        <p
+          className={cn(
+            "text-[15px] leading-snug text-foreground",
+            stop.visited && "line-through text-muted-foreground",
+          )}
+        >
+          {e.name}
+          {e.category && (
+            <span className="text-xs text-muted-foreground font-normal"> · {e.category}</span>
+          )}
+        </p>
 
-          {/* Priority tag (tap to edit) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button
-                className={cn(
-                  "inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full border shrink-0",
-                  pMeta.className,
-                )}
-                aria-label={`Prioridade ${pMeta.label}`}
-              >
-                <Flag className="w-2.5 h-2.5" />
-                {pMeta.label}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-40 p-1" align="end">
-              {(Object.keys(PRIORITY_META) as StopPriority[]).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => onSetPriority(p)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md hover:bg-secondary text-left"
-                >
-                  <span className={cn("w-2 h-2 rounded-full", PRIORITY_META[p].dot)} />
-                  {PRIORITY_META[p].label}
-                  {priority === p && (
-                    <Check className="w-3 h-3 ml-auto text-primary" />
-                  )}
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* Personal note — italic, inline editable */}
+        {/* Personal note — inline editable, discreet gray */}
         {editing ? (
-          <div className="mt-2">
+          <div className="mt-1.5">
             <Textarea
               autoFocus
               value={noteDraft}
@@ -575,7 +570,7 @@ function StopRow({
               }}
               rows={2}
               placeholder="Ex: reservar mesa, chegar antes do pôr-do-sol…"
-              className="resize-none text-xs italic"
+              className="resize-none text-xs"
             />
             <p className="text-[10px] text-muted-foreground text-right mt-1">
               {noteDraft.length}/280 · toque fora para salvar
@@ -584,28 +579,25 @@ function StopRow({
         ) : hasNote ? (
           <button
             onClick={onStartEditNote}
-            className="mt-2 w-full text-left text-[12px] italic text-muted-foreground bg-secondary/50 rounded-md px-2 py-1.5 leading-snug hover:bg-secondary transition-colors"
+            className="mt-0.5 block w-full text-left text-xs text-muted-foreground leading-snug"
           >
             {stop.personal_note}
           </button>
         ) : (
           <button
             onClick={onStartEditNote}
-            className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            className="mt-0.5 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
           >
-            <StickyNote className="w-3 h-3" />
             Adicionar nota
           </button>
         )}
 
-        {/* Move to another day */}
-        <div className="mt-2">
+        {/* Day picker — very discreet */}
+        <div className="mt-1">
           <Popover>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border border-border bg-background text-muted-foreground hover:bg-secondary transition-colors">
-                <CalendarDays className="w-2.5 h-2.5" />
+              <button className="text-[11px] text-muted-foreground/70 hover:text-foreground transition-colors">
                 {stop.planned_day ? `Dia ${stop.planned_day}` : "Sem dia"}
-                <ChevronDown className="w-2.5 h-2.5" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-40 p-1" align="start">
@@ -637,11 +629,12 @@ function StopRow({
       <button
         {...attributes}
         {...listeners}
-        className="p-1 -mr-1 text-muted-foreground/60 hover:text-muted-foreground touch-none cursor-grab active:cursor-grabbing"
+        className="p-1 self-center text-muted-foreground/30 hover:text-muted-foreground touch-none cursor-grab active:cursor-grabbing"
         aria-label="Reordenar parada"
       >
         <GripVertical className="w-4 h-4" />
       </button>
+
     </div>
   );
 }
