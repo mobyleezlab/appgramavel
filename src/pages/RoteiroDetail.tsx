@@ -56,27 +56,25 @@ import { toast } from "sonner";
 
 const PRIORITY_META: Record<
   StopPriority,
-  { label: string; className: string; dot: string; ring: string }
+  { label: string; dot: string; bar: string }
 > = {
   high: {
     label: "Alta",
-    className: "bg-destructive/10 text-destructive border-destructive/20",
     dot: "bg-destructive",
-    ring: "ring-destructive/40",
+    bar: "bg-destructive",
   },
   medium: {
     label: "Média",
-    className: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     dot: "bg-amber-500",
-    ring: "ring-amber-400/40",
+    bar: "bg-amber-500",
   },
   low: {
     label: "Baixa",
-    className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
     dot: "bg-emerald-500",
-    ring: "ring-emerald-400/40",
+    bar: "bg-emerald-500",
   },
 };
+
 
 interface StopItem {
   id: string;
