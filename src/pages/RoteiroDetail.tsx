@@ -6,13 +6,11 @@ import {
   Mountain,
   Sparkles,
   Edit3,
-  StickyNote,
   CalendarDays,
-  Flag,
   Check,
   GripVertical,
-  ChevronDown,
 } from "lucide-react";
+
 import {
   DndContext,
   PointerSensor,
