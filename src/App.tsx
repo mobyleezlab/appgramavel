@@ -39,16 +39,12 @@ const loadAdminLogin = () => import("./admin/pages/AdminLogin");
 const Explore = lazy(loadExplore);
 const ExploreCategory = lazy(loadExploreCategory);
 const Coupons = lazy(loadCoupons);
-const Roteiros = lazy(loadRoteiros);
-const RoteiroDetail = lazy(loadRoteiroDetail);
-
-const RoteiroEditor = lazy(loadRoteiroEditor);
 const Establishment = lazy(loadEstablishment);
 const SavedPlaces = lazy(loadSavedPlaces);
 const CheckInsPage = lazy(loadCheckIns);
-const RoutesPage = lazy(loadRoutesPage);
 const Settings = lazy(loadSettings);
 const UserCoupons = lazy(loadUserCoupons);
+
 const Login = lazy(loadLogin);
 const Register = lazy(loadRegister);
 const ResetPassword = lazy(loadResetPassword);
