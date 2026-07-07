@@ -21,16 +21,12 @@ import Privacidade from "./pages/Privacidade";
 const loadExplore = () => import("./pages/Explore");
 const loadExploreCategory = () => import("./pages/ExploreCategory");
 const loadCoupons = () => import("./pages/Coupons");
-const loadRoteiros = () => import("./pages/Roteiros");
-const loadRoteiroDetail = () => import("./pages/RoteiroDetail");
-
-const loadRoteiroEditor = () => import("./pages/RoteiroEditor");
 const loadEstablishment = () => import("./pages/Establishment");
 const loadSavedPlaces = () => import("./pages/profile/SavedPlaces");
 const loadCheckIns = () => import("./pages/profile/CheckIns");
-const loadRoutesPage = () => import("./pages/profile/Routes");
 const loadSettings = () => import("./pages/profile/Settings");
 const loadUserCoupons = () => import("./pages/profile/UserCoupons");
+
 const loadLogin = () => import("./pages/auth/Login");
 const loadRegister = () => import("./pages/auth/Register");
 const loadResetPassword = () => import("./pages/auth/ResetPassword");
