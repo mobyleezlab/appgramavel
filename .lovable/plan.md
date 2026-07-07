@@ -1,92 +1,85 @@
-# Plano: Roteiros como Planner Pessoal
+# Repaginação visual — Roteiros (checklist estilo TripIt/Apple Notes)
 
-Transforma a página de Roteiros num organizador de "o que visitar" — sem guia estilo Google Maps. Cada parada vira um item de checklist com nota pessoal, dia planejado e prioridade. Roteiros sugeridos continuam como inspiração e podem ser salvos como uma nova lista.
+Escopo estritamente visual. Nenhum hook, mutation, service, RLS, rota ou estrutura de dados é tocado. Comportamento (drag, toggle visitado, popovers de prioridade/dia, sheet de nota, clone) permanece idêntico — só muda o markup/classes.
 
-## Fluxo novo
+## Arquivos afetados
 
-1. `/roteiros` — duas tabs: **Sugeridos** (inspiração, igual hoje) e **Meus roteiros** (agora chamados "Minhas listas").
-2. Ao abrir uma lista minha (`/roteiros/:id?type=user`): visualização de planner, agrupada por Dia (Sem dia, Dia 1, Dia 2...), com progresso `X/Y visitados`.
-3. Cada parada: checkbox de visitado, badge de prioridade, chip de dia, botão de nota (abre sheet com textarea).
-4. Roteiro sugerido: mantém preview + timeline + botão **"Salvar na minha lista"** (clona) — sem "Iniciar".
+1. `src/pages/RoteiroDetail.tsx` — lista de paradas + section headers por dia
+2. `src/components/routes/MyRouteCard.tsx` — item da aba "Minhas listas"
+3. `src/pages/Roteiros.tsx` — trocar `space-y-3` da aba mine por container de lista com divisores (sem cards flutuando)
 
-## Remoções
+Não mexer: `Roteiros.tsx` aba "Sugeridos", `SortableStop.tsx` (é do editor, não da tela de detalhe), `useRoutes.ts`, `userRoutes.ts`, `App.tsx`, RLS, SQL.
 
-- Rota `/roteiros/:id/navegar` + arquivo `src/pages/RoteiroNavigation.tsx` (deletar do `App.tsx` também).
-- Componentes só usados pela navegação guiada: `src/components/map/NavigationView.tsx`, `src/components/routes/HowToGetThereButton.tsx` (verificar uso antes; se usado em outro lugar, manter).
-- CTA "Iniciar roteiro" / "Continuar" / "Refazer" em `RoteiroDetail.tsx`.
-- `useStartRoute` das telas de listagem/detalhe (hook fica no service caso seja usado em outros lugares).
-- Mini-mapa em `RoteiroDetail.tsx` permanece só como referência visual (pins), sem polilinha de rota nem `getMultiLegRoute`.
+## 1) Linha de parada (RoteiroDetail)
 
-## Alterações por arquivo
-
-### Banco (Supabase migration)
-Adicionar em `user_route_stops`:
-- `personal_note text`
-- `planned_day smallint` (null = sem dia)
-- `priority text check (priority in ('low','medium','high'))` default `'medium'`
-
-Sem mudança em RLS (herdada). Incluir `GRANT` explícitos se a tabela ainda não tiver.
-
-### `src/services/userRoutes.ts`
-- Adicionar `updateUserRouteStop(stopId, { personal_note?, planned_day?, priority? })`.
-- Tipar novos campos em `UserRouteRow.user_route_stops[]`.
-
-### `src/hooks/useRoutes.ts`
-- `useUpdateStop()` — mutation que invalida `mine`.
-- Remover uso de `useStartRoute` das telas (hook em si pode ficar).
-
-### `src/pages/Roteiros.tsx`
-- Renomear rótulo da tab "Meus roteiros" → "Minhas listas".
-- Remover `handleStartMine` e o botão "Iniciar" dentro do `MyRouteCard` (ajustar props).
-- Mostrar no card: título, capa, `visitados/total` + barra de progresso, chips "N dias planejados" quando houver, ações: Abrir, Editar, Duplicar, Compartilhar, Excluir.
-
-### `src/components/routes/MyRouteCard.tsx`
-- Remover botão/estado de iniciar/continuar. Substituir por "Abrir lista".
-- Progresso baseado em `visited/total`.
-
-### `src/pages/RoteiroDetail.tsx` (planner mode quando `type=user`)
-- Remover: `getMultiLegRoute`, estatísticas de tempo de carro, CTA sticky de iniciar.
-- Manter: capa, descrição, mini-mapa só com pins, botão "Editar lista".
-- Nova seção **Planner**:
-  - Agrupamento por `planned_day` (Sem dia → Dia 1 → Dia 2 …).
-  - Item de parada: checkbox (toggle `markStopVisited`), thumbnail, nome, categoria, chip de dia (Popover para escolher), chip de prioridade (Popover Alta/Média/Baixa com cor), botão nota (ícone StickyNote — abre `Sheet` com `Textarea`, salva via `useUpdateStop`).
-  - Header do grupo mostra `X/Y visitados` do dia.
-- Modo sugerido (`!isUser`): remove CTA "Iniciar", troca por "Salvar na minha lista" (usa clone existente, redireciona para `/roteiros/:novoId?type=user`).
-
-### `src/pages/RoteiroEditor.tsx`
-- Sem mudança funcional obrigatória; apenas garantir que salvar não dependa de iniciar.
-
-### `src/App.tsx`
-- Remover import e `<Route>` de `RoteiroNavigation`.
-
-## Detalhes técnicos
-
-- Optimistic update no checkbox (padrão do projeto): `queryClient.setQueryData` para `routesKeys.mineById(id)` antes do mutate; rollback em erro.
-- Prioridade: cores por token — `high` usa `bg-destructive/10 text-destructive`, `medium` `bg-primary/10 text-primary`, `low` `bg-muted text-muted-foreground`.
-- Dia planejado via `Popover` com botões 1..N + "Sem dia"; N = max(dias atuais)+1 (mínimo 3 opções).
-- Nota em `Sheet` mobile-first, `Textarea` até 280 chars, botão Salvar sticky.
-- Contagem de dias no card = `new Set(stops.map(s => s.planned_day).filter(Boolean)).size`.
-- Manter `max-w-2xl`, `pb-20`, GlobalHeader e BottomNav conforme design system.
-
-## Diagrama do detalhe (planner)
+Estrutura da linha (sem card, sem shadow, sem rounded forte):
 
 ```text
-┌─ Capa + título ─────────────────┐
-│ 5/8 visitados · 2 dias planejados│
-├─ mini-mapa (pins, sem rota) ────┤
-├─ [Editar lista]                 │
-│                                 │
-│ Sem dia (2/3)                   │
-│  ☐ Café Colonial   [Alta] [📝]  │
-│  ☑ Mirante         [Média][📝•]│
-│                                 │
-│ Dia 1 (2/3)                     │
-│  ...                            │
-└─────────────────────────────────┘
+│ ▢  Nome da parada                    ⋮⋮
+│    categoria · nota pessoal em cinza
+└── border-b border-border/50 ──────────
 ```
 
-## Fora de escopo
+- Container da linha: `flex items-start gap-3 py-3 pl-3 pr-2 border-b border-border/40`, sem `bg`, sem `shadow`, sem `rounded`.
+- **Barra de prioridade**: `<span>` absoluto na borda esquerda, `w-[3px] h-full`, cor por prioridade (`bg-destructive` / `bg-primary` / `bg-emerald-500`). Sem barra visível quando `priority` está ausente (fica só um espaço equivalente para alinhar). Clique na barra abre o Popover de prioridade que já existe — apenas troca o trigger.
+- **Checkbox de visitado**: mantém `Checkbox` shadcn tamanho grande (`h-5 w-5`), único elemento com cor primária forte. Continua chamando o mesmo `useUpdateStop`.
+- **Nome**: `text-[15px] text-foreground`, `line-through text-muted-foreground` quando visitado.
+- **Categoria**: mesma linha após nome como `· categoria` em `text-xs text-muted-foreground`, OU quebra pra linha 2 se não couber. Remover imagem/avatar do estabelecimento.
+- **Nota pessoal**: se existir, `<p class="text-xs text-muted-foreground mt-0.5">` abaixo do nome. Sem ícone sticky, sem itálico. Toque na área da nota abre o Sheet de edição já existente.
+- **Grip**: ícone `GripVertical w-4 h-4 text-muted-foreground/40` alinhado à direita. Continua sendo o handle do dnd-kit (mesmos listeners/attributes).
+- **Sem badges** "Alta/Média/Baixa" com texto/fundo. O rótulo textual só aparece dentro do Popover ao abrir.
 
-- Notificações/lembretes por data.
-- Compartilhamento colaborativo da lista.
-- Estimativas de tempo/distância entre paradas.
+Remover da linha atual: fundo do card, borda arredondada, sombra, foto do estabelecimento, chip colorido de prioridade, ícone de nota.
+
+## 2) Section header por dia
+
+Trocar o header atual (grande/bold/possivelmente com badge) por header estilo iOS Contacts:
+
+```tsx
+<div className="px-3 pt-6 pb-2">
+  <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+    Dia {n}
+  </h2>
+</div>
+```
+
+- Sem card, sem fundo, sem badge de contagem inline.
+- Contagem `x/y visitados` só como rodapé opcional da seção em `text-[11px] text-muted-foreground/70 px-3 pt-2 pb-1`, alinhada à direita. Se ficar poluído, remove.
+- Paradas sem `planned_day` vão em seção final com header `SEM DIA DEFINIDO`.
+
+## 3) MyRouteCard → MyRouteRow
+
+Transformar de card com imagem em linha compacta densa:
+
+```text
+│ [thumb 40px opc.]  Nome do roteiro                     ⋯
+│                    3 de 8 visitados · 2 dias      · · ·
+└── border-b border-border/40 ────────────────────────────
+```
+
+- Wrapper: `flex items-center gap-3 py-3 px-3 border-b border-border/40`, sem `rounded-2xl`, sem `shadow-card`, sem `bg-card`, sem `overflow-hidden`.
+- **Thumb**: manter opcional — círculo `w-9 h-9 rounded-full bg-secondary` com iniciais do título (sem imagem de capa banner). Se preferir mais limpo, remover completamente e ficar só texto.
+- **Título**: `text-[15px] font-medium truncate`.
+- **Meta**: linha 2 em `text-xs text-muted-foreground` — "`{visited} de {total} visitados · {maxDay} dias`". Sem Progress bar (a razão x/y já comunica).
+- **Prioridades**: 3 pontinhos `w-1.5 h-1.5 rounded-full` (só as prioridades presentes, sem número ao lado) alinhados à direita antes do menu.
+- **Menu ⋯**: mantém `DropdownMenu` com Editar/Duplicar/Compartilhar/Excluir — só reduz padding e cor do ícone (`text-muted-foreground/60`).
+- Toda a linha continua clicável → `onOpen`.
+
+## 4) Container da lista em `Roteiros.tsx` (aba mine)
+
+- Remover `space-y-3` entre itens.
+- Envolver a lista em `<div className="rounded-2xl border border-border/40 bg-card divide-y divide-border/40 overflow-hidden">` para dar sensação de "um bloco de lista" (estilo iOS grouped list) em vez de N cards flutuando.
+- O CTA "Planejar outro passeio" quando `length === 1` vira uma linha dentro do mesmo bloco (última row com texto discreto + ícone `+`), mantendo o mesmo `onClick`.
+- Empty state e aba "Sugeridos" ficam intocados.
+
+## 5) Paleta / tokens
+
+- Nenhum hex novo. Usar apenas tokens existentes: `foreground`, `muted-foreground`, `border`, `primary`, `destructive`, `emerald-500` (já em uso), `secondary`.
+- Zero `shadow-card`, zero gradientes nas linhas afetadas.
+- Ícones decorativos removidos: `CalendarDays`, `CheckCircle2` do MyRouteCard, ícone de nota da linha, avatar do estabelecimento. Manter só: Checkbox, GripVertical, MoreVertical, ChevronRight/Popover triggers funcionais.
+
+## Verificação após implementar
+
+- Preview `/roteiros` aba "Minhas listas" e uma `/roteiros/:id?type=user` com paradas em ≥2 dias, com prioridades e notas.
+- Confirmar visualmente: nenhum card com sombra, divisores finos, prioridade como traço/ponto colorido, nota como texto cinza, headers "DIA N" em caps pequenos.
+- Confirmar funcional: toggle visitado persiste, drag reordena, popover de prioridade/dia abre, sheet de nota abre e salva, menu ⋯ funciona, clique na linha abre detalhe.
