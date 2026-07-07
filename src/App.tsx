@@ -21,16 +21,12 @@ import Privacidade from "./pages/Privacidade";
 const loadExplore = () => import("./pages/Explore");
 const loadExploreCategory = () => import("./pages/ExploreCategory");
 const loadCoupons = () => import("./pages/Coupons");
-const loadRoteiros = () => import("./pages/Roteiros");
-const loadRoteiroDetail = () => import("./pages/RoteiroDetail");
-
-const loadRoteiroEditor = () => import("./pages/RoteiroEditor");
 const loadEstablishment = () => import("./pages/Establishment");
 const loadSavedPlaces = () => import("./pages/profile/SavedPlaces");
 const loadCheckIns = () => import("./pages/profile/CheckIns");
-const loadRoutesPage = () => import("./pages/profile/Routes");
 const loadSettings = () => import("./pages/profile/Settings");
 const loadUserCoupons = () => import("./pages/profile/UserCoupons");
+
 const loadLogin = () => import("./pages/auth/Login");
 const loadRegister = () => import("./pages/auth/Register");
 const loadResetPassword = () => import("./pages/auth/ResetPassword");
@@ -43,16 +39,12 @@ const loadAdminLogin = () => import("./admin/pages/AdminLogin");
 const Explore = lazy(loadExplore);
 const ExploreCategory = lazy(loadExploreCategory);
 const Coupons = lazy(loadCoupons);
-const Roteiros = lazy(loadRoteiros);
-const RoteiroDetail = lazy(loadRoteiroDetail);
-
-const RoteiroEditor = lazy(loadRoteiroEditor);
 const Establishment = lazy(loadEstablishment);
 const SavedPlaces = lazy(loadSavedPlaces);
 const CheckInsPage = lazy(loadCheckIns);
-const RoutesPage = lazy(loadRoutesPage);
 const Settings = lazy(loadSettings);
 const UserCoupons = lazy(loadUserCoupons);
+
 const Login = lazy(loadLogin);
 const Register = lazy(loadRegister);
 const ResetPassword = lazy(loadResetPassword);
@@ -81,17 +73,14 @@ function RoutePrefetcher() {
       [
         loadExplore,
         loadCoupons,
-        loadRoteiros,
         loadSavedPlaces,
         loadCheckIns,
-        loadRoutesPage,
         loadSettings,
         loadUserCoupons,
-        loadRoteiroDetail,
-        loadRoteiroEditor,
         loadEstablishment,
         loadExploreCategory,
       ].forEach((fn) => {
+
         try { fn(); } catch { /* ignore */ }
       });
     });
@@ -178,17 +167,14 @@ const App = () => (
                           <Route path="/map" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
                           <Route path="/map/categoria/:category" element={<ProtectedRoute><ExploreCategory /></ProtectedRoute>} />
                           <Route path="/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
-                          <Route path="/roteiros" element={<ProtectedRoute><Roteiros /></ProtectedRoute>} />
-                          <Route path="/roteiros/novo" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id/editar" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id" element={<ProtectedRoute><RoteiroDetail /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id/navegar" element={<Navigate to=".." replace />} />
+                          <Route path="/roteiros/*" element={<Navigate to="/" replace />} />
                           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                           <Route path="/estabelecimento/:slug" element={<ProtectedRoute><Establishment /></ProtectedRoute>} />
                           <Route path="/perfil/favoritos" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
                           <Route path="/perfil/lugares" element={<Navigate to="/perfil/favoritos" replace />} />
                           <Route path="/perfil/checkins" element={<ProtectedRoute><CheckInsPage /></ProtectedRoute>} />
-                          <Route path="/perfil/roteiros" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+                          <Route path="/perfil/roteiros" element={<Navigate to="/profile" replace />} />
+
                           <Route path="/perfil/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                           <Route path="/perfil/cupons" element={<ProtectedRoute><UserCoupons /></ProtectedRoute>} />
                           {/* Legacy badges redirect to checkins */}

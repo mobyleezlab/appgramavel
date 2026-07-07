@@ -146,9 +146,9 @@ export default function Profile() {
   const STATS = [
     { label: "Favoritos", value: String(savedPlaces.length), icon: Heart, to: "/perfil/favoritos" },
     { label: "Cupons", value: String(savedCoupons.length), icon: Ticket, to: "/perfil/cupons" },
-    { label: "Roteiros", value: "0", icon: Map, to: "/perfil/roteiros" },
     { label: "Check-ins", value: String(checkInCount), icon: CheckCircle2, to: "/perfil/checkins" },
   ];
+
 
   const openLightbox = (index: number) => {
     setLightboxIndex(index);

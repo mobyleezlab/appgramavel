@@ -1,4 +1,4 @@
-import { Home, Map, Route, User } from "lucide-react";
+import { Home, Map, User } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -7,9 +7,9 @@ import { prefetchExploreData, prefetchFeedData } from "@/lib/queries";
 const NAV_ITEMS = [
   { to: "/", icon: Home, label: "Feed" },
   { to: "/map", icon: Map, label: "Explorar" },
-  { to: "/roteiros", icon: Route, label: "Roteiros" },
   { to: "/profile", icon: User, label: "Perfil" },
 ];
+
 
 export function BottomNav() {
   const location = useLocation();
