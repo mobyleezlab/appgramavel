@@ -348,22 +348,17 @@ export default function RoteiroDetail() {
 
           {/* Planner (user) OR simple list (suggested) */}
           {isUser && grouped ? (
-            <div className="space-y-8">
+            <div className="-mx-4">
               {grouped.map(([day, items]) => {
                 const groupVisited = items.filter((s) => s.visited).length;
                 return (
                   <section key={String(day)}>
-                    <div className="flex items-end justify-between mb-3 pb-2 border-b border-border/60">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-                          {day === null ? "A organizar" : `Dia ${day}`}
-                        </p>
-                        <h3 className="text-lg font-bold text-foreground leading-tight">
-                          {day === null ? "Sem dia definido" : `Dia ${day}`}
-                        </h3>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground tabular-nums">
-                        {groupVisited}/{items.length} visitados
+                    <div className="flex items-baseline justify-between px-4 pt-6 pb-2">
+                      <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {day === null ? "Sem dia definido" : `Dia ${day}`}
+                      </h2>
+                      <span className="text-[11px] text-muted-foreground/70 tabular-nums">
+                        {groupVisited}/{items.length}
                       </span>
                     </div>
 
@@ -376,7 +371,7 @@ export default function RoteiroDetail() {
                         items={items.map((s) => s.id)}
                         strategy={verticalListSortingStrategy}
                       >
-                        <div className="space-y-2.5">
+                        <div className="border-t border-border/40">
                           {items.map((s) => (
                             <StopRow
                               key={s.id}
@@ -400,6 +395,7 @@ export default function RoteiroDetail() {
                 );
               })}
             </div>
+
           ) : (
             <div>
               <h3 className="text-sm font-semibold mb-4">Paradas do roteiro</h3>
