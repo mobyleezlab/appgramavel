@@ -193,7 +193,7 @@ export default function Roteiros() {
                 </div>
               </div>
             ) : (
-              <>
+              <div className="border-y border-border/40 divide-y divide-border/40 -mx-4 sm:mx-0 sm:border sm:rounded-2xl sm:overflow-hidden">
                 {myList.map((r) => (
                   <MyRouteCard
                     key={r.id}
@@ -208,16 +208,15 @@ export default function Roteiros() {
                 {myList.length === 1 && (
                   <button
                     onClick={() => navigate("/roteiros/novo")}
-                    className="w-full rounded-2xl border border-dashed border-border bg-secondary/20 p-4 text-center hover:bg-secondary/40 transition-colors"
+                    className="w-full flex items-center gap-2 py-3 px-4 text-sm text-muted-foreground hover:bg-secondary/40 transition-colors"
                   >
-                    <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                      <Plus className="w-4 h-4" />
-                      Planejar outro passeio
-                    </div>
+                    <Plus className="w-4 h-4" />
+                    Planejar outro passeio
                   </button>
                 )}
-              </>
+              </div>
             )}
+
           </TabsContent>
         </Tabs>
       </main>
