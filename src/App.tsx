@@ -167,17 +167,14 @@ const App = () => (
                           <Route path="/map" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
                           <Route path="/map/categoria/:category" element={<ProtectedRoute><ExploreCategory /></ProtectedRoute>} />
                           <Route path="/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
-                          <Route path="/roteiros" element={<ProtectedRoute><Roteiros /></ProtectedRoute>} />
-                          <Route path="/roteiros/novo" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id/editar" element={<ProtectedRoute><RoteiroEditor /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id" element={<ProtectedRoute><RoteiroDetail /></ProtectedRoute>} />
-                          <Route path="/roteiros/:id/navegar" element={<Navigate to=".." replace />} />
+                          <Route path="/roteiros/*" element={<Navigate to="/" replace />} />
                           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                           <Route path="/estabelecimento/:slug" element={<ProtectedRoute><Establishment /></ProtectedRoute>} />
                           <Route path="/perfil/favoritos" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
                           <Route path="/perfil/lugares" element={<Navigate to="/perfil/favoritos" replace />} />
                           <Route path="/perfil/checkins" element={<ProtectedRoute><CheckInsPage /></ProtectedRoute>} />
-                          <Route path="/perfil/roteiros" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+                          <Route path="/perfil/roteiros" element={<Navigate to="/profile" replace />} />
+
                           <Route path="/perfil/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                           <Route path="/perfil/cupons" element={<ProtectedRoute><UserCoupons /></ProtectedRoute>} />
                           {/* Legacy badges redirect to checkins */}
