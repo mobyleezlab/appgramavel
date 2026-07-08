@@ -102,7 +102,7 @@ export default function Privacidade() {
           <li>Avaliações (reviews): nota e comentário sobre estabelecimentos</li>
           <li>Favoritos e pastas de favoritos</li>
           <li>Reações: curtidas/emojis em publicações e fotos</li>
-          <li>Roteiros salvos: rotas turísticas seguidas e progresso em cada parada</li>
+          
           <li>Cupons resgatados</li>
           <li>Selos/badges de gamificação</li>
           <li>Foto de perfil (avatar)</li>
@@ -127,7 +127,7 @@ export default function Privacidade() {
             <tbody className="text-muted-foreground">
               {[
                 ["Criar e gerenciar sua conta", "Execução de contrato (Art. 7º, V)"],
-                ["Exibir check-ins, avaliações e roteiros", "Execução de contrato"],
+                ["Exibir check-ins e avaliações", "Execução de contrato"],
                 ["Personalizar recomendações", "Consentimento / legítimo interesse (Art. 7º, IX)"],
                 ["Gamificação", "Execução de contrato"],
                 ["Comunicações sobre a conta", "Execução de contrato"],
@@ -162,7 +162,7 @@ export default function Privacidade() {
         <P>Para exercer esses direitos, entre em contato pelo e-mail informado na Seção 1.</P>
         <P>
           Ao excluir sua conta, apagamos seus dados de perfil, check-ins, avaliações,
-          favoritos, reações, roteiros, cupons, selos e histórico de atividades.
+          favoritos, reações, cupons, selos e histórico de atividades.
         </P>
 
         <H2>6. Por quanto tempo guardamos seus dados</H2>
