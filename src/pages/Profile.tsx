@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Ticket, Map, CheckCircle2, Camera, Star, Pencil, TrendingUp, Heart, Loader2 } from "lucide-react";
+import { MapPin, Ticket, Map, CheckCircle2, Camera, Star, Pencil, TrendingUp, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import ImageLightbox from "@/components/ui/ImageLightbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { getTimeline } from "@/services/timeline";
-import { getMemories } from "@/services/memories";
 import { getCheckIns } from "@/services/checkIns";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useCoupons } from "@/contexts/CouponsContext";
@@ -33,34 +31,21 @@ const TIMELINE_ICONS: Record<string, typeof CheckCircle2 | typeof Star> = {
 export default function Profile() {
   const navigate = useNavigate();
   const { profile, user, refreshProfile } = useAuth();
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [timeline, setTimeline] = useState<any[]>([]);
-  const [memories, setMemories] = useState<{ src: string; caption: string }[]>([]);
   const [checkInCount, setCheckInCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [uploadingMemories, setUploadingMemories] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const memoryInputRef = useRef<HTMLInputElement>(null);
 
   const { savedPlaces } = useFavorites();
   const { savedCoupons } = useCoupons();
 
-  const loadMemories = async () => {
-    const res = await getMemories();
-    if (res.data && res.data.length > 0) {
-      setMemories(res.data.map((m: any) => ({ src: m.image_url, caption: m.caption || "" })));
-    }
-  };
-
   useEffect(() => {
     Promise.all([
       getTimeline(),
-      getMemories(),
       getCheckIns(),
-    ]).then(([timelineRes, memoriesRes, checkInsRes]) => {
+    ]).then(([timelineRes, checkInsRes]) => {
       if (timelineRes.data && timelineRes.data.length > 0) {
         setTimeline(timelineRes.data.map((t: any) => ({
           id: t.id, type: t.type, action: t.action,
@@ -68,9 +53,6 @@ export default function Profile() {
           image: t.image_url || t.establishment?.logo_url || "",
           date: t.created_at,
         })));
-      }
-      if (memoriesRes.data && memoriesRes.data.length > 0) {
-        setMemories(memoriesRes.data.map((m: any) => ({ src: m.image_url, caption: m.caption || "" })));
       }
       setCheckInCount(checkInsRes.data?.length ?? 0);
       setLoading(false);
@@ -115,45 +97,11 @@ export default function Profile() {
     toast.success("Foto atualizada!");
   }
 
-  async function handleMemoryUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (!files.length || !user) return;
-    setUploadingMemories(true);
-
-    for (const file of files) {
-      const path = `${user.id}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("user-memories")
-        .upload(path, file, { upsert: false });
-      if (uploadError) continue;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("user-memories")
-        .getPublicUrl(path);
-
-      await supabase.from("user_memories").insert({
-        user_id: user.id,
-        image_url: publicUrl,
-        caption: null,
-      });
-    }
-
-    await loadMemories();
-    setUploadingMemories(false);
-    toast.success(`${files.length} foto(s) adicionada(s)!`);
-  }
-
   const STATS = [
     { label: "Favoritos", value: String(savedPlaces.length), icon: Heart, to: "/perfil/favoritos" },
     { label: "Cupons", value: String(savedCoupons.length), icon: Ticket, to: "/perfil/cupons" },
     { label: "Check-ins", value: String(checkInCount), icon: CheckCircle2, to: "/perfil/checkins" },
   ];
-
-
-  const openLightbox = (index: number) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
-  };
 
   const displayName = profile?.name ?? user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Usuário";
   const avatarUrl = avatarPreview || (profile?.avatar_url ? `${profile.avatar_url}?t=${profile.updated_at ?? Date.now()}` : "");
@@ -282,82 +230,9 @@ export default function Profile() {
             <p className="text-xs text-muted-foreground text-center pt-1">Sua linha do tempo está vazia. Explore e faça check-ins!</p>
           </div>
         )}
-
-        {/* Memories */}
-        {memories.length > 0 && (
-          <div className="px-4">
-            <div className="grid grid-cols-3 gap-1.5">
-              {memories.slice(0, 12).map((mem, i) => (
-                <div key={i} className="aspect-square rounded-lg overflow-hidden group cursor-pointer relative" onClick={() => openLightbox(i)}>
-                  <img src={mem.src} alt={mem.caption} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-all flex items-center justify-center">
-                    <Heart className="h-4 w-4 text-primary-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty state for memories */}
-        {!loading && memories.length === 0 && (
-          <div className="px-4 space-y-2">
-            <div className="grid grid-cols-3 gap-1.5">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="aspect-square rounded-lg" />
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground text-center pt-1">Nenhuma memória ainda. Adicione fotos das suas viagens!</p>
-          </div>
-        )}
-
-        {/* Upload memories skeleton */}
-        {uploadingMemories && (
-          <div className="px-4">
-            <div className="grid grid-cols-3 gap-1.5">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="aspect-square rounded-lg bg-secondary animate-pulse flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="px-4">
-          <input
-            ref={memoryInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-            multiple
-            className="hidden"
-            onChange={handleMemoryUpload}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full rounded-full gap-1.5 h-9 text-xs font-medium"
-            onClick={() => memoryInputRef.current?.click()}
-            disabled={uploadingMemories}
-          >
-            <Camera className="w-3.5 h-3.5" />
-            Adicionar fotos
-          </Button>
-        </div>
       </main>
 
       <BottomNav />
-
-      {memories.length > 0 && (
-        <ImageLightbox
-          images={memories.slice(0, 12).map(m => m.src)}
-          captions={memories.slice(0, 12).map(m => m.caption)}
-          initialIndex={lightboxIndex}
-          open={lightboxOpen}
-          onClose={() => setLightboxOpen(false)}
-          aspectRatio="4/5"
-        />
-      )}
     </div>
   );
 }

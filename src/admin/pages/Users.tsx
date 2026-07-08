@@ -40,7 +40,7 @@ type AdminUser = {
   coupons: number | null;
   routes: number | null;
   reactions: number | null;
-  memories: number | null;
+  
   favorite_folders: number | null;
   reviews_count: number | null;
 };
@@ -420,7 +420,6 @@ export default function UsersPage() {
                     { label: "Cupons", value: selectedUser.coupons, icon: "🎟️" },
                     { label: "Roteiros", value: selectedUser.routes, icon: "🗺️" },
                     { label: "Reações", value: selectedUser.reactions, icon: "❤️" },
-                    { label: "Memórias", value: selectedUser.memories, icon: "📸" },
                     { label: "Avaliações", value: selectedUser.reviews_count, icon: "⭐" },
                   ].map(({ label, value, icon }) => (
                     <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
