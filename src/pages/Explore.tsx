@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { Search, X, MapPin, Clock, Star, TrendingUp, Dog, Ticket } from "lucide-react";
+import { Search, X, MapPin, Clock, Star, TrendingUp, Dog } from "lucide-react";
 import { FilterChip, FilterChipsBar } from "@/components/ui/FilterChips";
 import { useNavigate } from "react-router-dom";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
@@ -22,7 +22,6 @@ const FILTER_CHIPS = [
   { label: "Mais bem avaliados", icon: Star },
   { label: "Em alta hoje", icon: TrendingUp },
   { label: "Pet friendly", icon: Dog },
-  { label: "Com cupons", icon: Ticket },
 ];
 
 export default function Explore() {
@@ -185,15 +184,6 @@ export default function Explore() {
                     <span className="text-xs font-medium text-foreground text-center leading-tight">{label}</span>
                   </button>
                 ))}
-              </div>
-              <div className="flex justify-center mt-4">
-                <button
-                  onClick={() => goToCategory("Cupons")}
-                  className="flex flex-col items-center justify-center gap-2 p-4 bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover hover:border-primary/30 transition-all duration-200 w-[calc(33.333%-0.667rem)]"
-                >
-                  <Ticket className="w-5 h-5 text-primary" />
-                  <span className="text-xs font-medium text-foreground text-center leading-tight">Cupons</span>
-                </button>
               </div>
             </div>
 
