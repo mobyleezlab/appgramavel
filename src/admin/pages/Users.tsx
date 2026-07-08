@@ -40,7 +40,7 @@ type AdminUser = {
   coupons: number | null;
   routes: number | null;
   reactions: number | null;
-  memories: number | null;
+  
   favorite_folders: number | null;
   reviews_count: number | null;
 };
