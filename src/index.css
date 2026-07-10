@@ -43,6 +43,14 @@
     --info-foreground: 0 0% 100%;
     --rating: 45 93% 47%;
 
+    /* Badge category tokens (decorative, per-category — not status colors) */
+    --badge-explore: 221 83% 53%;   /* compass */
+    --badge-food: 32 95% 44%;       /* utensils-crossed */
+    --badge-drink: 347 77% 50%;     /* wine */
+    --badge-photo: 192 91% 36%;     /* camera */
+    --badge-leisure: 142 76% 36%;   /* ferris-wheel */
+    --badge-event: 41 96% 40%;      /* ticket */
+
     --gradient-primary: linear-gradient(135deg, hsl(233 100% 69%), hsl(236 100% 79%));
     --gradient-secondary: linear-gradient(135deg, hsl(210 40% 96%), hsl(210 40% 90%));
     --shadow-card: 0 1px 3px 0 hsl(var(--foreground) / 0.06), 0 1px 2px -1px hsl(var(--foreground) / 0.06);

@@ -16,12 +16,12 @@ const BADGE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
 };
 
 const BADGE_COLOR_PALETTES: Record<string, { bg: string; border: string; icon: string; ring: string }> = {
-  compass: { bg: "bg-blue-50", border: "border-blue-200", icon: "text-blue-600", ring: "#2563eb" },
-  "utensils-crossed": { bg: "bg-amber-50", border: "border-amber-200", icon: "text-amber-600", ring: "#d97706" },
-  wine: { bg: "bg-rose-50", border: "border-rose-200", icon: "text-rose-600", ring: "#e11d48" },
-  camera: { bg: "bg-cyan-50", border: "border-cyan-200", icon: "text-cyan-600", ring: "#0891b2" },
-  "ferris-wheel": { bg: "bg-green-50", border: "border-green-200", icon: "text-green-600", ring: "#16a34a" },
-  ticket: { bg: "bg-yellow-50", border: "border-yellow-200", icon: "text-yellow-600", ring: "#ca8a04" },
+  compass: { bg: "bg-badge-explore/10", border: "border-badge-explore/20", icon: "text-badge-explore", ring: "hsl(var(--badge-explore))" },
+  "utensils-crossed": { bg: "bg-badge-food/10", border: "border-badge-food/20", icon: "text-badge-food", ring: "hsl(var(--badge-food))" },
+  wine: { bg: "bg-badge-drink/10", border: "border-badge-drink/20", icon: "text-badge-drink", ring: "hsl(var(--badge-drink))" },
+  camera: { bg: "bg-badge-photo/10", border: "border-badge-photo/20", icon: "text-badge-photo", ring: "hsl(var(--badge-photo))" },
+  "ferris-wheel": { bg: "bg-badge-leisure/10", border: "border-badge-leisure/20", icon: "text-badge-leisure", ring: "hsl(var(--badge-leisure))" },
+  ticket: { bg: "bg-badge-event/10", border: "border-badge-event/20", icon: "text-badge-event", ring: "hsl(var(--badge-event))" },
 };
 
 function ProgressRing({ progress, total, color, size = 56 }: { progress: number; total: number; color: string; size?: number }) {
