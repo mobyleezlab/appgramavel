@@ -38,7 +38,7 @@ function KpiCard({ title, value, suffix, delta, icon: Icon }: {
             <p className="text-2xl font-bold mt-1 truncate">{value}{suffix ?? ""}</p>
             {delta !== undefined && delta !== null && (
               <p className={cn("text-xs mt-1 flex items-center gap-1",
-                isUp && "text-green-600", isDown && "text-destructive",
+                isUp && "text-success", isDown && "text-destructive",
                 !isUp && !isDown && "text-muted-foreground")}>
                 {isUp && <TrendingUp className="w-3 h-3" />}
                 {isDown && <TrendingDown className="w-3 h-3" />}
@@ -441,7 +441,7 @@ export default function NotificationsPage() {
               {insights.map((i, idx) => (
                 <li key={idx} className={cn("text-sm flex items-start gap-2 p-3 rounded-lg",
                   i.type === "warning" && "bg-destructive/10 text-destructive",
-                  i.type === "positive" && "bg-green-500/10 text-green-700",
+                  i.type === "positive" && "bg-success/10 text-success",
                   i.type === "info" && "bg-muted")}>
                   {i.type === "warning" ? <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                    : i.type === "positive" ? <TrendingUp className="w-4 h-4 mt-0.5 shrink-0" />

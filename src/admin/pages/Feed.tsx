@@ -49,7 +49,7 @@ function KpiCard({
             {delta !== undefined && delta !== null && (
               <p className={cn(
                 "text-xs mt-1 flex items-center gap-1",
-                isUp && "text-green-600",
+                isUp && "text-success",
                 isDown && "text-destructive",
                 !isUp && !isDown && "text-muted-foreground",
               )}>
@@ -194,7 +194,7 @@ export default function FeedPage() {
                 key={idx}
                 className={cn(
                   "flex gap-2 p-3 rounded-lg text-sm",
-                  i.type === "positive" && "bg-green-500/10 text-green-700",
+                  i.type === "positive" && "bg-success/10 text-success",
                   i.type === "warning" && "bg-destructive/10 text-destructive",
                   i.type === "info" && "bg-primary/10 text-primary"
                 )}
