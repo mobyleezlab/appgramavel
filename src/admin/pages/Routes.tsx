@@ -118,8 +118,7 @@ export default function RoutesPage() {
     await supabase.from("routes").update({ is_featured: !current } as never).eq("id", id);
     loadAll();
   }
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Excluir "${title}"? Esta ação não pode ser desfeita.`)) return;
+  async function handleDelete(id: string) {
     await deleteRoute(id);
     toast.success("Roteiro excluído");
     loadAll();
