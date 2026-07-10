@@ -94,6 +94,14 @@
     --info: 217 91% 60%;
     --info-foreground: 0 0% 100%;
     --rating: 45 93% 47%;
+
+    /* Badge category tokens (dark) */
+    --badge-explore: 221 78% 62%;
+    --badge-food: 32 90% 53%;
+    --badge-drink: 347 72% 59%;
+    --badge-photo: 192 86% 45%;
+    --badge-leisure: 142 71% 45%;
+    --badge-event: 41 91% 49%;
   }
 }
 
