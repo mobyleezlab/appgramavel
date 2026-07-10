@@ -357,7 +357,7 @@ export default function EstablishmentForm() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="open">
-                              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500" /> Aberto</span>
+                              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-success" /> Aberto</span>
                             </SelectItem>
                             <SelectItem value="closed">
                               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-muted-foreground" /> Fechado</span>

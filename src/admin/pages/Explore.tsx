@@ -64,8 +64,8 @@ function KpiCard({ title, value, icon: Icon, delta, suffix, danger }: {
             {delta !== undefined && delta !== null && (
               <p className={cn(
                 "text-xs mt-1 flex items-center gap-1",
-                isUp && (danger ? "text-destructive" : "text-green-600"),
-                isDown && (danger ? "text-green-600" : "text-destructive"),
+                isUp && (danger ? "text-destructive" : "text-success"),
+                isDown && (danger ? "text-success" : "text-destructive"),
                 !isUp && !isDown && "text-muted-foreground",
               )}>
                 {isUp && <TrendingUp className="w-3 h-3" />}
@@ -247,7 +247,7 @@ export default function ExplorePage() {
                 key={idx}
                 className={cn(
                   "flex gap-2 p-3 rounded-lg text-sm",
-                  i.type === "positive" && "bg-green-500/10 text-green-700",
+                  i.type === "positive" && "bg-success/10 text-success",
                   i.type === "warning" && "bg-destructive/10 text-destructive",
                   i.type === "info" && "bg-primary/10 text-primary",
                 )}
@@ -404,7 +404,7 @@ export default function ExplorePage() {
                     <TableCell className="text-right">{p.checkins}</TableCell>
                     <TableCell className="text-right font-semibold">{p.score}</TableCell>
                     <TableCell>
-                      {p.suggestion === "suggested" && <Badge className="bg-green-500/10 text-green-700 hover:bg-green-500/10">Sugerido</Badge>}
+                      {p.suggestion === "suggested" && <Badge className="bg-success/10 text-success hover:bg-success/10">Sugerido</Badge>}
                       {p.suggestion === "reevaluate" && <Badge variant="destructive">Reavaliar</Badge>}
                     </TableCell>
                     <TableCell className="text-right">

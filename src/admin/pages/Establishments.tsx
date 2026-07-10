@@ -292,7 +292,7 @@ export default function Establishments() {
                 </TableCell>
                 <TableCell>
                   {est.health.complete ? (
-                    <span className="flex items-center gap-1 text-xs text-green-600">
+                    <span className="flex items-center gap-1 text-xs text-success">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Completo
                     </span>
                   ) : (

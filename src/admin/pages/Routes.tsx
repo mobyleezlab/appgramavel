@@ -59,7 +59,7 @@ function KpiCard({ title, value, icon: Icon, delta, suffix }: {
             <p className="text-2xl font-bold mt-1 truncate">{value}{suffix ?? ""}</p>
             {delta !== undefined && delta !== null && (
               <p className={cn("text-xs mt-1 flex items-center gap-1",
-                isUp && "text-green-600", isDown && "text-destructive",
+                isUp && "text-success", isDown && "text-destructive",
                 !isUp && !isDown && "text-muted-foreground")}>
                 {isUp && <TrendingUp className="w-3 h-3" />}
                 {isDown && <TrendingDown className="w-3 h-3" />}
@@ -255,7 +255,7 @@ export default function RoutesPage() {
             {insights.length === 0 && <p className="text-sm text-muted-foreground">Sem insights no período.</p>}
             {insights.map((i, idx) => (
               <div key={idx} className={cn("flex gap-2 p-3 rounded-lg text-sm",
-                i.type === "positive" && "bg-green-500/10 text-green-700",
+                i.type === "positive" && "bg-success/10 text-success",
                 i.type === "warning" && "bg-destructive/10 text-destructive",
                 i.type === "info" && "bg-primary/10 text-primary")}>
                 {i.type === "warning" ? <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" /> : <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" />}

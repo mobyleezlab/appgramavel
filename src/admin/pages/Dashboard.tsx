@@ -65,7 +65,7 @@ function KpiCard({
             {delta !== undefined && delta !== null && (
               <p className={cn(
                 "text-xs mt-1 flex items-center gap-1",
-                isUp && "text-green-600",
+                isUp && "text-success",
                 isDown && "text-destructive",
                 !isUp && !isDown && "text-muted-foreground",
               )}>
