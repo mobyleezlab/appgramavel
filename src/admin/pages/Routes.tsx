@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import {
   Plus, Pencil, Copy, Trash2, MapPin, TrendingUp, TrendingDown,
@@ -117,8 +118,7 @@ export default function RoutesPage() {
     await supabase.from("routes").update({ is_featured: !current } as never).eq("id", id);
     loadAll();
   }
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Excluir "${title}"? Esta ação não pode ser desfeita.`)) return;
+  async function handleDelete(id: string) {
     await deleteRoute(id);
     toast.success("Roteiro excluído");
     loadAll();
@@ -222,7 +222,21 @@ export default function RoutesPage() {
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => openEdit(r.id)} title="Editar"><Pencil className="w-4 h-4" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => handleDuplicate(r.id)} title="Duplicar"><Copy className="w-4 h-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id, r.title)} title="Excluir"><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" title="Excluir"><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir roteiro?</AlertDialogTitle>
+                                <AlertDialogDescription>Esta ação não pode ser desfeita. O roteiro "{r.title}" será removido permanentemente.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(r.id)}>Excluir</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
