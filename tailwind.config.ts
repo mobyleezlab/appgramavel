@@ -60,6 +60,14 @@ export default {
           foreground: "hsl(var(--info-foreground))",
         },
         rating: "hsl(var(--rating))",
+        badge: {
+          explore: "hsl(var(--badge-explore))",
+          food: "hsl(var(--badge-food))",
+          drink: "hsl(var(--badge-drink))",
+          photo: "hsl(var(--badge-photo))",
+          leisure: "hsl(var(--badge-leisure))",
+          event: "hsl(var(--badge-event))",
+        },
       },
       fontSize: {
         caption: ["0.75rem", { lineHeight: "1rem" }],
