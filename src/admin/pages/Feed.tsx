@@ -22,80 +22,8 @@ import {
   BarChart, Bar, Legend,
 } from "recharts";
 import { cn } from "@/lib/utils";
-
-type Period = 7 | 30 | 90 | "all";
-
-// ---------- Local KPI card with delta ----------
-function KpiCard({
-  title, value, icon: Icon, delta, suffix,
-}: {
-  title: string;
-  value: string | number;
-  icon: any;
-  delta?: number | null;
-  suffix?: string;
-}) {
-  const isUp = (delta ?? 0) > 0;
-  const isDown = (delta ?? 0) < 0;
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1 truncate">
-              {value}{suffix ?? ""}
-            </p>
-            {delta !== undefined && delta !== null && (
-              <p className={cn(
-                "text-xs mt-1 flex items-center gap-1",
-                isUp && "text-success",
-                isDown && "text-destructive",
-                !isUp && !isDown && "text-muted-foreground",
-              )}>
-                {isUp && <TrendingUp className="w-3 h-3" />}
-                {isDown && <TrendingDown className="w-3 h-3" />}
-                {delta > 0 ? "+" : ""}{delta}% vs. período anterior
-              </p>
-            )}
-            {delta === null && (
-              <p className="text-xs mt-1 text-muted-foreground">Sem dados anteriores</p>
-            )}
-          </div>
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ---------- Period selector ----------
-function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
-  const opts: { label: string; value: Period }[] = [
-    { label: "7 dias", value: 7 },
-    { label: "30 dias", value: 30 },
-    { label: "90 dias", value: 90 },
-    { label: "Tudo", value: "all" },
-  ];
-  return (
-    <div className="inline-flex rounded-lg border bg-card p-1">
-      {opts.map(o => (
-        <button
-          key={String(o.value)}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "px-3 py-1.5 text-sm rounded-md transition-colors",
-            value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+import { KpiCard } from "../components/ui/KpiCard";
+import { PeriodSelector, type Period } from "../components/ui/PeriodSelector";
 
 function ctrVariant(ctr: number): "success" | "info" | "destructive" {
   if (ctr >= 5) return "success";

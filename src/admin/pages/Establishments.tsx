@@ -25,22 +25,7 @@ import { EstablishmentDetailsDrawer } from "../components/EstablishmentDetailsDr
 
 const CATEGORIES = ["Todos", "Restaurantes", "Cafés", "Hotéis", "Atrações", "Compras", "Bares & Vinícolas"];
 
-function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
-  const opts: { label: string; value: Period }[] = [
-    { label: "7d", value: 7 }, { label: "30d", value: 30 }, { label: "90d", value: 90 }, { label: "Tudo", value: "all" },
-  ];
-  return (
-    <div className="inline-flex rounded-lg border bg-card p-1">
-      {opts.map(o => (
-        <button key={String(o.value)} onClick={() => onChange(o.value)}
-          className={cn("px-3 py-1.5 text-sm rounded-md transition-colors",
-            value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+import { PeriodSelector } from "../components/ui/PeriodSelector";
 
 function MiniKpi({ icon: Icon, label, value, hint }: { icon: any; label: string; value: any; hint?: string }) {
   return (

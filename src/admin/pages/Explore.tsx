@@ -19,73 +19,8 @@ import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-
-type Period = 7 | 30 | 90 | "all";
-
-function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
-  const opts: { label: string; value: Period }[] = [
-    { label: "7 dias", value: 7 },
-    { label: "30 dias", value: 30 },
-    { label: "90 dias", value: 90 },
-    { label: "Tudo", value: "all" },
-  ];
-  return (
-    <div className="inline-flex rounded-lg border bg-card p-1">
-      {opts.map(o => (
-        <button
-          key={String(o.value)}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "px-3 py-1.5 text-sm rounded-md transition-colors",
-            value === o.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function KpiCard({ title, value, icon: Icon, delta, suffix, danger }: {
-  title: string; value: string | number; icon: any; delta?: number | null; suffix?: string; danger?: boolean;
-}) {
-  const isUp = (delta ?? 0) > 0;
-  const isDown = (delta ?? 0) < 0;
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className={cn("text-2xl font-bold mt-1 truncate", danger && Number(value) > 0 && "text-destructive")}>
-              {value}{suffix ?? ""}
-            </p>
-            {delta !== undefined && delta !== null && (
-              <p className={cn(
-                "text-xs mt-1 flex items-center gap-1",
-                isUp && (danger ? "text-destructive" : "text-success"),
-                isDown && (danger ? "text-success" : "text-destructive"),
-                !isUp && !isDown && "text-muted-foreground",
-              )}>
-                {isUp && <TrendingUp className="w-3 h-3" />}
-                {isDown && <TrendingDown className="w-3 h-3" />}
-                {delta > 0 ? "+" : ""}{delta}% vs. período anterior
-              </p>
-            )}
-            {delta === null && (
-              <p className="text-xs mt-1 text-muted-foreground">Sem dados anteriores</p>
-            )}
-          </div>
-          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-            danger && Number(value) > 0 ? "bg-destructive/10" : "bg-primary/10")}>
-            <Icon className={cn("h-5 w-5", danger && Number(value) > 0 ? "text-destructive" : "text-primary")} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { KpiCard } from "../components/ui/KpiCard";
+import { PeriodSelector, type Period } from "../components/ui/PeriodSelector";
 
 type Experience = { id: string; title: string; description: string | null; image_url: string | null; sort_order: number; views?: number; clicks?: number; ctr?: number };
 
