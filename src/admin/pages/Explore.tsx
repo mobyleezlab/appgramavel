@@ -400,16 +400,16 @@ export default function ExplorePage() {
                   <TableCell className="text-right">{exp.sort_order}</TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => reorderExperience(exp.id, "up")} disabled={idx === 0}>
+                      <Button variant="ghost" size="icon" onClick={() => reorderExperience(exp.id, "up")} disabled={idx === 0} aria-label="Mover para cima">
                         <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => reorderExperience(exp.id, "down")} disabled={idx === sortedExperiences.length - 1}>
+                      <Button variant="ghost" size="icon" onClick={() => reorderExperience(exp.id, "down")} disabled={idx === sortedExperiences.length - 1} aria-label="Mover para baixo">
                         <ArrowDown className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setEditing(exp)}>
+                      <Button variant="ghost" size="icon" onClick={() => setEditing(exp)} aria-label="Editar experiência">
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteExperience(exp.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => deleteExperience(exp.id)} aria-label="Excluir experiência">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
