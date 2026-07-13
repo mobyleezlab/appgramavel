@@ -175,11 +175,11 @@ export default function RoutesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(r.id)} title="Editar"><Pencil className="w-4 h-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDuplicate(r.id)} title="Duplicar"><Copy className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => openEdit(r.id)} title="Editar" aria-label="Editar"><Pencil className="w-4 h-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDuplicate(r.id)} title="Duplicar" aria-label="Duplicar"><Copy className="w-4 h-4" /></Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" title="Excluir"><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                              <Button variant="ghost" size="icon" title="Excluir" aria-label="Excluir"><Trash2 className="w-4 h-4 text-destructive" /></Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
@@ -332,7 +332,7 @@ export default function RoutesPage() {
                   <TableCell className="font-medium">{b.title}</TableCell>
                   <TableCell><Switch checked={b.active} onCheckedChange={() => toggleBanner(b.id, b.active)} /></TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => deleteBanner(b.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => deleteBanner(b.id)} aria-label="Excluir banner">
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </TableCell>
