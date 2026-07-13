@@ -332,7 +332,7 @@ export default function EstablishmentForm() {
             <div className="flex items-center gap-2"><Switch checked={form.pet_friendly} onCheckedChange={v => updateField("pet_friendly", v)} /><Label>Pet Friendly</Label></div>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
@@ -421,13 +421,13 @@ export default function EstablishmentForm() {
           <div className="grid grid-cols-4 gap-3">
             {photos.map((photo, i) => (
               <div key={i} className="relative group" style={{ aspectRatio: "4/5" }}>
-                <img src={photo.url} alt="" className="w-full h-full object-cover rounded-lg" />
+                <img src={photo.url} alt="" className="w-full h-full object-cover rounded-2xl" />
                 {/* Order badge */}
                 <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-background/80 text-foreground text-xs flex items-center justify-center font-medium">
                   {i + 1}
                 </div>
                 {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col justify-end p-2 gap-1.5">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex flex-col justify-end p-2 gap-1.5">
                   <button
                     onClick={() => removePhoto(i)}
                     className="self-end w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
@@ -460,7 +460,7 @@ export default function EstablishmentForm() {
                 label="Foto"
                 renderTrigger={() => (
                   <div
-                    className="border-2 border-dashed border-muted-foreground/30 rounded-lg flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-muted-foreground/30 rounded-2xl flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer"
                     style={{ aspectRatio: "4/5" }}
                   >
                     <Plus className="h-6 w-6 text-muted-foreground" />

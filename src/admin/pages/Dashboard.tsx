@@ -115,7 +115,7 @@ export default function Dashboard() {
                   <button
                     key={i.label}
                     onClick={() => navigate(i.link)}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+                    className="flex items-center justify-between p-3 rounded-2xl border hover:bg-muted/50 transition-colors text-left"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <i.icon className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -201,7 +201,7 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">Sem insights no momento.</p>
             ) : insights.map((i, idx) => (
               <div key={idx} className={cn(
-                "flex items-start gap-2 p-3 rounded-lg text-sm",
+                "flex items-start gap-2 p-3 rounded-2xl text-sm",
                 i.type === "positive" && "bg-success/10 text-success-foreground",
                 i.type === "warning" && "bg-warning/10",
                 i.type === "info" && "bg-info/10",

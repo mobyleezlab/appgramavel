@@ -51,7 +51,7 @@ export function KpiCard({ title, value, icon: Icon, delta, suffix, danger, onCli
           </div>
           <div
             className={cn(
-              "h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ml-2",
+              "h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 ml-2",
               isDanger ? "bg-destructive/10" : "bg-primary/10",
             )}
           >

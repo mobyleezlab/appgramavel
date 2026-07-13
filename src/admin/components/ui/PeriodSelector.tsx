@@ -11,7 +11,7 @@ const PERIOD_OPTIONS: { label: string; value: Period }[] = [
 
 export function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
   return (
-    <div className="inline-flex rounded-lg border bg-card p-1">
+    <div className="inline-flex rounded-2xl border bg-card p-1">
       {PERIOD_OPTIONS.map(o => (
         <button
           key={String(o.value)}

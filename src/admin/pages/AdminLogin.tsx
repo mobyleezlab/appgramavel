@@ -63,7 +63,7 @@ export default function AdminLogin() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             {loginError && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+              <div className="p-3 rounded-2xl bg-destructive/10 border border-destructive/20">
                 <p className="text-sm text-destructive font-medium">
                   {loginError === "not_admin"
                     ? "Este e-mail não tem acesso ao painel admin."
