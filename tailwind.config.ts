@@ -69,14 +69,6 @@ export default {
           event: "hsl(var(--badge-event))",
         },
       },
-      fontSize: {
-        caption: ["0.75rem", { lineHeight: "1rem" }],
-        small: ["0.875rem", { lineHeight: "1.25rem" }],
-        body: ["1rem", { lineHeight: "1.5rem" }],
-        subtitle: ["1.25rem", { lineHeight: "1.75rem" }],
-        title: ["1.5rem", { lineHeight: "2rem" }],
-        hero: ["2rem", { lineHeight: "2.5rem" }],
-      },
       spacing: {
         "4.5": "1.125rem",
         "13": "3.25rem",
