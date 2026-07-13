@@ -457,8 +457,8 @@ export default function NotificationsPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {n.image_url
-                          ? <img src={n.image_url} className="w-8 h-8 rounded object-cover" alt="" />
-                          : <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center"><Bell className="w-4 h-4 text-primary" /></div>}
+                          ? <img src={n.image_url} className="w-8 h-8 rounded-full object-cover" alt="" />
+                          : <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Bell className="w-4 h-4 text-primary" /></div>}
                         <div className="min-w-0">
                           <p className="font-medium truncate max-w-[260px]">{n.title}</p>
                           <p className="text-xs text-muted-foreground truncate max-w-[260px]">{n.body}</p>

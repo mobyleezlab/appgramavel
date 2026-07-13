@@ -258,9 +258,9 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
                       }`}
                     >
                       {e.logo_url ? (
-                        <img src={e.logo_url} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                        <img src={e.logo_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
                       ) : (
-                        <div className="w-8 h-8 rounded bg-muted shrink-0" />
+                        <div className="w-8 h-8 rounded-full bg-muted shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{e.name}</p>
@@ -288,7 +288,7 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
                       <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shrink-0">
                         {i + 1}
                       </span>
-                      {s.est!.logo_url && <img src={s.est!.logo_url} className="w-7 h-7 rounded object-cover shrink-0" alt="" />}
+                      {s.est!.logo_url && <img src={s.est!.logo_url} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{s.est!.name}</p>
                         <p className="text-[10px] text-muted-foreground">{s.est!.category}</p>

@@ -243,7 +243,7 @@ export default function RoutesPage() {
                   <div className="space-y-1">
                     {s.stops.slice(0, 5).map(st => (
                       <div key={st.id} className="flex items-center gap-2 text-xs">
-                        {st.logo_url ? <img src={st.logo_url} className="w-5 h-5 rounded object-cover" alt="" /> : <div className="w-5 h-5 rounded bg-muted" />}
+                        {st.logo_url ? <img src={st.logo_url} className="w-5 h-5 rounded-full object-cover" alt="" /> : <div className="w-5 h-5 rounded-full bg-muted" />}
                         <span className="truncate">{st.name}</span>
                       </div>
                     ))}
