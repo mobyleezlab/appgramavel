@@ -346,7 +346,7 @@ export default function UsersPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedUser(u)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedUser(u)} aria-label="Ver detalhes do usuário">
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
@@ -355,6 +355,7 @@ export default function UsersPage() {
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => setConfirmDeleteUser(u)}
                       disabled={u.id === currentAdminId}
+                      aria-label="Excluir usuário"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
