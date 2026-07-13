@@ -138,7 +138,7 @@ export default function CouponsPage() {
         </Select>
       </div>
 
-      <div className="border rounded-lg">
+      <div className="border rounded-2xl">
         <Table>
           <TableHeader>
             <TableRow>

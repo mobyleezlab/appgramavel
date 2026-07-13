@@ -37,7 +37,7 @@ function MiniKpi({ icon: Icon, label, value, hint }: { icon: any; label: string;
             <p className="text-xl font-bold mt-0.5">{value}</p>
             {hint && <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>}
           </div>
-          <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-2xl bg-primary/10 flex items-center justify-center">
             <Icon className="h-4 w-4 text-primary" />
           </div>
         </div>
@@ -207,7 +207,7 @@ export default function Establishments() {
 
       {/* Bulk actions */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-2 p-2 px-3 rounded-lg border bg-muted/30">
+        <div className="flex items-center gap-2 p-2 px-3 rounded-2xl border bg-muted/30">
           <span className="text-sm">{selected.size} selecionado(s)</span>
           <div className="flex-1" />
           <Button size="sm" variant="outline" onClick={() => handleBulk("open")}>Ativar</Button>
@@ -219,7 +219,7 @@ export default function Establishments() {
       )}
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-2xl overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -251,9 +251,9 @@ export default function Establishments() {
                 </TableCell>
                 <TableCell>
                   {est.image_url ? (
-                    <img src={est.image_url} alt={`Foto de ${est.name}`} className="w-10 h-10 rounded-lg object-cover" />
+                    <img src={est.image_url} alt={`Foto de ${est.name}`} className="w-10 h-10 rounded-2xl object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-2xl bg-muted flex items-center justify-center">
                       <ImageIcon className="w-4 h-4 text-muted-foreground" />
                     </div>
                   )}
@@ -350,7 +350,7 @@ export default function Establishments() {
             </div>
             {insights.map((i, idx) => (
               <div key={idx} className={cn(
-                "flex items-start gap-2 p-2.5 rounded-lg text-sm",
+                "flex items-start gap-2 p-2.5 rounded-2xl text-sm",
                 i.type === "positive" && "bg-success/10",
                 i.type === "warning" && "bg-warning/10",
                 i.type === "info" && "bg-info/10",

@@ -223,7 +223,7 @@ export default function UsersPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpis.map(kpi => (
-          <div key={kpi.label} className="border rounded-lg p-4 bg-card">
+          <div key={kpi.label} className="border rounded-2xl p-4 bg-card">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
               <kpi.icon className="h-4 w-4" />
               {kpi.label}
@@ -281,7 +281,7 @@ export default function UsersPage() {
       </p>
 
       {/* Table */}
-      <div className="border rounded-lg">
+      <div className="border rounded-2xl">
         <Table>
           <TableHeader>
             <TableRow>
@@ -422,7 +422,7 @@ export default function UsersPage() {
                     { label: "Reações", value: selectedUser.reactions, icon: "❤️" },
                     { label: "Avaliações", value: selectedUser.reviews_count, icon: "⭐" },
                   ].map(({ label, value, icon }) => (
-                    <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                    <div key={label} className="flex items-center gap-2 p-2 rounded-2xl bg-muted/50">
                       <span>{icon}</span>
                       <div>
                         <p className="text-xs text-muted-foreground">{label}</p>

@@ -209,7 +209,7 @@ export default function RoutesPage() {
           <CardContent className="space-y-3">
             {insights.length === 0 && <p className="text-sm text-muted-foreground">Sem insights no período.</p>}
             {insights.map((i, idx) => (
-              <div key={idx} className={cn("flex gap-2 p-3 rounded-lg text-sm",
+              <div key={idx} className={cn("flex gap-2 p-3 rounded-2xl text-sm",
                 i.type === "positive" && "bg-success/10 text-success",
                 i.type === "warning" && "bg-destructive/10 text-destructive",
                 i.type === "info" && "bg-primary/10 text-primary")}>
@@ -235,7 +235,7 @@ export default function RoutesPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {suggestions.map((s, i) => (
-                <div key={i} className="rounded-lg border p-4 space-y-3">
+                <div key={i} className="rounded-2xl border p-4 space-y-3">
                   <div>
                     <p className="font-medium text-sm">{s.title}</p>
                     <p className="text-xs text-muted-foreground">{s.stops.length} paradas · {s.category}</p>

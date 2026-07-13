@@ -121,7 +121,7 @@ export default function FeedPage() {
               <div
                 key={idx}
                 className={cn(
-                  "flex gap-2 p-3 rounded-lg text-sm",
+                  "flex gap-2 p-3 rounded-2xl text-sm",
                   i.type === "positive" && "bg-success/10 text-success",
                   i.type === "warning" && "bg-destructive/10 text-destructive",
                   i.type === "info" && "bg-primary/10 text-primary"
@@ -210,9 +210,9 @@ export default function FeedPage() {
                   <TableRow key={p.postId}>
                     <TableCell>
                       {p.image ? (
-                        <img src={p.image} alt="" className="w-10 h-10 rounded-md object-cover" />
+                        <img src={p.image} alt="" className="w-10 h-10 rounded-2xl object-cover" />
                       ) : (
-                        <div className="w-10 h-10 rounded-md bg-muted" />
+                        <div className="w-10 h-10 rounded-2xl bg-muted" />
                       )}
                     </TableCell>
                     <TableCell>
@@ -259,7 +259,7 @@ export default function FeedPage() {
             ) : (
               <div className="space-y-3">
                 {topEst.map((e, i) => (
-                  <div key={e.establishmentId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+                  <div key={e.establishmentId} className="flex items-center gap-3 p-2 rounded-2xl hover:bg-muted/50">
                     <span className="text-sm font-bold text-muted-foreground w-5">{i + 1}</span>
                     {e.logo_url ? (
                       <img src={e.logo_url} alt="" className="w-10 h-10 rounded-full object-cover" />

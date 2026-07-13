@@ -181,7 +181,7 @@ export default function ExplorePage() {
               <div
                 key={idx}
                 className={cn(
-                  "flex gap-2 p-3 rounded-lg text-sm",
+                  "flex gap-2 p-3 rounded-2xl text-sm",
                   i.type === "positive" && "bg-success/10 text-success",
                   i.type === "warning" && "bg-destructive/10 text-destructive",
                   i.type === "info" && "bg-primary/10 text-primary",
@@ -318,9 +318,9 @@ export default function ExplorePage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         {p.image ? (
-                          <img src={p.image} alt="" className="w-10 h-10 rounded-md object-cover" />
+                          <img src={p.image} alt="" className="w-10 h-10 rounded-2xl object-cover" />
                         ) : (
-                          <div className="w-10 h-10 rounded-md bg-muted" />
+                          <div className="w-10 h-10 rounded-2xl bg-muted" />
                         )}
                         <div>
                           <div className="font-medium text-sm">{p.name}</div>
@@ -387,9 +387,9 @@ export default function ExplorePage() {
                 <TableRow key={exp.id}>
                   <TableCell>
                     {exp.image_url ? (
-                      <img src={exp.image_url} alt="" className="w-10 h-10 rounded-md object-cover" />
+                      <img src={exp.image_url} alt="" className="w-10 h-10 rounded-2xl object-cover" />
                     ) : (
-                      <div className="w-10 h-10 rounded-md bg-muted" />
+                      <div className="w-10 h-10 rounded-2xl bg-muted" />
                     )}
                   </TableCell>
                   <TableCell className="font-medium">{exp.title}</TableCell>
@@ -445,7 +445,7 @@ export default function ExplorePage() {
                 <Label>URL da imagem</Label>
                 <Input value={editing.image_url ?? ""} onChange={e => setEditing({ ...editing, image_url: e.target.value })} />
                 {editing.image_url && (
-                  <img src={editing.image_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-md" />
+                  <img src={editing.image_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-2xl" />
                 )}
               </div>
               <div>

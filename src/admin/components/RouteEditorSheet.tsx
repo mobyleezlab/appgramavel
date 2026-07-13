@@ -217,7 +217,7 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
                 label="Capa do roteiro (2:1)"
               />
             </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center justify-between rounded-2xl border p-3">
               <div>
                 <p className="text-sm font-medium">Destacar no app</p>
                 <p className="text-xs text-muted-foreground">Aparece em destaque na página de roteiros</p>
@@ -253,7 +253,7 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
                     <button
                       key={e.id}
                       onClick={() => toggleStop(e.id)}
-                      className={`w-full flex items-center gap-2 p-2 rounded-md border text-left ${
+                      className={`w-full flex items-center gap-2 p-2 rounded-2xl border text-left ${
                         sel ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
                       }`}
                     >
@@ -277,13 +277,13 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
             <div className="space-y-2">
               <p className="text-sm font-medium">Paradas ({stops.length})</p>
               {stopsDetailed.length === 0 && (
-                <p className="text-xs text-muted-foreground py-8 text-center border border-dashed rounded-md">
+                <p className="text-xs text-muted-foreground py-8 text-center border border-dashed rounded-2xl">
                   Nenhuma parada — selecione à esquerda
                 </p>
               )}
               <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                 {stopsDetailed.map((s, i) => (
-                  <div key={s.establishment_id} className="border rounded-md p-2 space-y-2">
+                  <div key={s.establishment_id} className="border rounded-2xl p-2 space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shrink-0">
                         {i + 1}
@@ -318,7 +318,7 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
         {/* STEP 3 */}
         {step === 3 && (
           <div className="space-y-4">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-2xl border p-4">
               <div className="flex gap-3">
                 {imageUrl && <img src={imageUrl} className="w-24 h-12 rounded object-cover" alt="" />}
                 <div>
@@ -332,7 +332,7 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
             <div className="relative pl-6 space-y-2">
               <div className="absolute left-[10px] top-2 bottom-2 w-0.5 bg-primary/20" />
               {stopsDetailed.map((s, i) => (
-                <div key={s.establishment_id} className="relative flex items-center gap-2 p-2 rounded-md border bg-card">
+                <div key={s.establishment_id} className="relative flex items-center gap-2 p-2 rounded-2xl border bg-card">
                   <div className="absolute -left-6 w-5 h-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
                     {i + 1}
                   </div>

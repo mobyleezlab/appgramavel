@@ -49,7 +49,7 @@ function NotificationPreview({ p }: { p: NotificationPayload }) {
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-3">{p.body}</p>
             )}
             {p.image_url && (
-              <img src={p.image_url} alt="" className="mt-2 rounded-lg w-full max-h-32 object-cover" />
+              <img src={p.image_url} alt="" className="mt-2 rounded-2xl w-full max-h-32 object-cover" />
             )}
             <p className="text-xs text-muted-foreground/70 mt-1.5">Agora</p>
           </div>
@@ -409,7 +409,7 @@ export default function NotificationsPage() {
           <CardContent>
             <ul className="space-y-2">
               {insights.map((i, idx) => (
-                <li key={idx} className={cn("text-sm flex items-start gap-2 p-3 rounded-lg",
+                <li key={idx} className={cn("text-sm flex items-start gap-2 p-3 rounded-2xl",
                   i.type === "warning" && "bg-destructive/10 text-destructive",
                   i.type === "positive" && "bg-success/10 text-success",
                   i.type === "info" && "bg-muted")}>

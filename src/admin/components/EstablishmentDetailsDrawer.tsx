@@ -59,9 +59,9 @@ export function EstablishmentDetailsDrawer({ establishmentId, period, onClose, o
             {/* Header */}
             <div className="flex gap-4">
               {e.image_url ? (
-                <img src={e.image_url} alt={e.name} className="w-20 h-20 rounded-lg object-cover" />
+                <img src={e.image_url} alt={e.name} className="w-20 h-20 rounded-2xl object-cover" />
               ) : (
-                <div className="w-20 h-20 rounded-lg bg-muted" />
+                <div className="w-20 h-20 rounded-2xl bg-muted" />
               )}
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-lg truncate">{e.name}</h3>
@@ -90,7 +90,7 @@ export function EstablishmentDetailsDrawer({ establishmentId, period, onClose, o
             </div>
 
             {/* Chart */}
-            <div className="border rounded-lg p-4">
+            <div className="border rounded-2xl p-4">
               <p className="text-sm font-medium mb-3">Impressões e cliques por dia</p>
               <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={data.series}>
@@ -124,7 +124,7 @@ export function EstablishmentDetailsDrawer({ establishmentId, period, onClose, o
 
 function Kpi({ icon: Icon, label, value }: { icon: any; label: string; value: any }) {
   return (
-    <div className="border rounded-lg p-2.5">
+    <div className="border rounded-2xl p-2.5">
       <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
         <Icon className="w-3 h-3" />
         {label}
