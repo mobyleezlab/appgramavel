@@ -293,9 +293,9 @@ export default function RouteEditorSheet({ open, onOpenChange, routeId, prefill,
                         <p className="text-xs font-medium truncate">{s.est!.name}</p>
                         <p className="text-[10px] text-muted-foreground">{s.est!.category}</p>
                       </div>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(i, -1)} disabled={i === 0}><ArrowUp className="w-3 h-3" /></Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(i, 1)} disabled={i === stops.length - 1}><ArrowDown className="w-3 h-3" /></Button>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => toggleStop(s.establishment_id)}><X className="w-3 h-3" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Mover para cima"><ArrowUp className="w-3 h-3" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => move(i, 1)} disabled={i === stops.length - 1} aria-label="Mover para baixo"><ArrowDown className="w-3 h-3" /></Button>
+                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => toggleStop(s.establishment_id)} aria-label="Remover parada"><X className="w-3 h-3" /></Button>
                     </div>
                     <Input
                       placeholder="Nota da parada (opcional)"

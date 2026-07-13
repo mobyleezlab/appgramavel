@@ -169,15 +169,15 @@ export default function CouponsPage() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => setQrOpen(c.code)}>
+                    <Button variant="ghost" size="icon" onClick={() => setQrOpen(c.code)} aria-label="Ver QR code">
                       <QrCode className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(c)} aria-label="Editar cupom">
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        <Button variant="ghost" size="icon" aria-label="Excluir cupom"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>

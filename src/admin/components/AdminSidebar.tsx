@@ -44,7 +44,7 @@ export function AdminSidebar({ collapsed, onToggle }: Props) {
         {!collapsed && (
           <img src={logoSrc} alt="Gramável" className="h-[18px]" width={120} height={18} />
         )}
-        <Button variant="ghost" size="icon" onClick={onToggle} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={onToggle} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} className="shrink-0">
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
