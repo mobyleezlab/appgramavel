@@ -292,21 +292,21 @@ export default function Establishments() {
                 <TableCell className="text-right text-sm">{est.checkins}</TableCell>
                 <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-0.5">
-                    <Button variant="ghost" size="icon" title="Editar" onClick={() => navigate(`/admin/estabelecimentos/${est.id}`)}>
+                    <Button variant="ghost" size="icon" title="Editar" aria-label="Editar" onClick={() => navigate(`/admin/estabelecimentos/${est.id}`)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title="Ver no app" onClick={() => window.open(`/estabelecimento/${est.slug}`, "_blank", "noopener,noreferrer")}>
+                    <Button variant="ghost" size="icon" title="Ver no app" aria-label="Ver no app" onClick={() => window.open(`/estabelecimento/${est.slug}`, "_blank", "noopener,noreferrer")}>
                       <ExternalLink className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title="Duplicar" onClick={() => handleDuplicate(est.id)}>
+                    <Button variant="ghost" size="icon" title="Duplicar" aria-label="Duplicar" onClick={() => handleDuplicate(est.id)}>
                       <Copy className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" title={est.is_popular ? "Tirar popular" : "Marcar popular"} onClick={async () => { await togglePopular(est.id, !est.is_popular); load(); }}>
+                    <Button variant="ghost" size="icon" title={est.is_popular ? "Tirar popular" : "Marcar popular"} aria-label={est.is_popular ? "Tirar popular" : "Marcar popular"} onClick={async () => { await togglePopular(est.id, !est.is_popular); load(); }}>
                       <TrendingUp className={cn("h-4 w-4", est.is_popular && "text-primary")} />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" title="Excluir"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        <Button variant="ghost" size="icon" title="Excluir" aria-label="Excluir"><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
