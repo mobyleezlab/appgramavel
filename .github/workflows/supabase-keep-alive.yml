@@ -1,0 +1,46 @@
+name: Supabase Keep-Alive
+
+# Heartbeat mínimo e legítimo para manter o projeto Supabase ativo.
+# Executa um SELECT extremamente leve via REST API (PostgREST) a cada 3 dias.
+# Não escreve dados, não usa service_role, não gera tráfego excessivo.
+
+on:
+  schedule:
+    # A cada 3 dias às 12:00 UTC (09:00 horário de Brasília)
+    - cron: "0 12 */3 * *"
+  workflow_dispatch: # permite execução manual pela aba Actions do GitHub
+
+jobs:
+  heartbeat:
+    name: Supabase heartbeat
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Supabase (SELECT leve)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          echo "Iniciando heartbeat em: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+          # SELECT de 1 registro, apenas a coluna id — atividade real e mínima no banco.
+          HTTP_STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/establishments?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Accept: application/json")
+
+          echo "HTTP status: ${HTTP_STATUS}"
+          echo "Resposta (truncada): $(head -c 300 /tmp/response.json)"
+
+          if [ "${HTTP_STATUS}" -ge 200 ] && [ "${HTTP_STATUS}" -lt 300 ]; then
+            echo "✅ Heartbeat OK — Supabase respondeu corretamente."
+            echo "Executado em: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            exit 0
+          else
+            echo "❌ Heartbeat FALHOU — status ${HTTP_STATUS}."
+            exit 1
+          fi
