@@ -3,6 +3,8 @@ name: Supabase Keep-Alive
 # Heartbeat mínimo e legítimo para manter o projeto Supabase ativo.
 # Executa um SELECT extremamente leve via REST API (PostgREST) a cada 3 dias.
 # Não escreve dados, não usa service_role, não gera tráfego excessivo.
+# URL e publishable key são lidas de src/integrations/supabase/client.ts
+# (a publishable/anon key é pública por design e já está versionada no código).
 
 on:
   schedule:
@@ -17,10 +19,29 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Extrair configuração pública do client.ts
+        run: |
+          set -euo pipefail
+
+          SUPABASE_URL=$(grep -oE 'https://[a-z0-9]+\.supabase\.co' src/integrations/supabase/client.ts | head -n 1)
+          SUPABASE_ANON_KEY=$(grep -oE '"eyJ[A-Za-z0-9._-]+"' src/integrations/supabase/client.ts | head -n 1 | tr -d '"')
+
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_ANON_KEY}" ]; then
+            echo "❌ Não foi possível extrair SUPABASE_URL ou publishable key de client.ts."
+            exit 1
+          fi
+
+          echo "SUPABASE_URL=${SUPABASE_URL}" >> "${GITHUB_ENV}"
+          echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}" >> "${GITHUB_ENV}"
+          echo "Configuração extraída com sucesso (URL: ${SUPABASE_URL})."
+
       - name: Ping Supabase (SELECT leve)
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
         run: |
           set -euo pipefail
 
