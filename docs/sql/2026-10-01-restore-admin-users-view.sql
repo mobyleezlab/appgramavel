@@ -7,7 +7,7 @@ SELECT
   p.id, p.name, p.email, p.avatar_url, p.city, p.state, p.country, p.phone,
   p.birth_date, p.gender,
   CASE p.gender WHEN 'male' THEN 'Masculino' WHEN 'female' THEN 'Feminino'
-                WHEN 'other' THEN 'Outro' ELSE 'Não informado' END AS gender_label,
+                WHEN 'other' THEN 'Outro' WHEN 'prefer_not_to_say' THEN 'Prefiro não informar' ELSE 'Não informado' END AS gender_label,
   CASE WHEN p.birth_date IS NULL THEN NULL
        ELSE date_part('year', age(p.birth_date))::int END AS age,
   CASE
@@ -23,6 +23,7 @@ SELECT
     WHEN p.last_seen_at >= now() - interval '1 day' THEN 'online_today'
     WHEN p.last_seen_at >= now() - interval '7 days' THEN 'active_week'
     WHEN p.last_seen_at >= now() - interval '30 days' THEN 'active_month'
+    WHEN p.last_seen_at IS NULL THEN 'never'
     ELSE 'inactive' END AS activity_status,
   p.travel_since,
   (SELECT count(*) FROM public.user_favorites f WHERE f.user_id = p.id)::int AS saved_places,
