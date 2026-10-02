@@ -1331,60 +1331,6 @@ export type Database = {
           state: string | null
           travel_since: string | null
         }
-        Insert: {
-          activity_status?: never
-          age?: never
-          age_group?: never
-          avatar_url?: string | null
-          birth_date?: string | null
-          checkins?: never
-          city?: string | null
-          country?: string | null
-          coupons?: never
-          created_at?: string | null
-          email?: string | null
-          favorite_folders?: never
-          gender?: string | null
-          gender_label?: never
-          id?: string | null
-          is_active?: boolean | null
-          last_seen_at?: string | null
-          name?: string | null
-          phone?: string | null
-          reactions?: never
-          reviews_count?: never
-          routes?: never
-          saved_places?: never
-          state?: string | null
-          travel_since?: string | null
-        }
-        Update: {
-          activity_status?: never
-          age?: never
-          age_group?: never
-          avatar_url?: string | null
-          birth_date?: string | null
-          checkins?: never
-          city?: string | null
-          country?: string | null
-          coupons?: never
-          created_at?: string | null
-          email?: string | null
-          favorite_folders?: never
-          gender?: string | null
-          gender_label?: never
-          id?: string | null
-          is_active?: boolean | null
-          last_seen_at?: string | null
-          name?: string | null
-          phone?: string | null
-          reactions?: never
-          reviews_count?: never
-          routes?: never
-          saved_places?: never
-          state?: string | null
-          travel_since?: string | null
-        }
         Relationships: []
       }
       feed_analytics: {
@@ -1437,6 +1383,17 @@ export type Database = {
     }
     Functions: {
       admin_delete_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_user_activity_counts: {
+        Args: { _uid: string }
+        Returns: {
+          checkins: number
+          coupons: number
+          favorite_folders: number
+          reactions: number
+          reviews_count: number
+          saved_places: number
+        }[]
+      }
       decrement_reaction: {
         Args: { p_emoji: string; p_post_id: string }
         Returns: undefined
