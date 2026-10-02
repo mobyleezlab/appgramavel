@@ -10,10 +10,25 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      _keep_alive_heartbeat: {
+        Row: {
+          id: number
+          pinged_at: string
+        }
+        Insert: {
+          id?: number
+          pinged_at?: string
+        }
+        Update: {
+          id?: number
+          pinged_at?: string
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           body: string
@@ -164,13 +179,6 @@ export type Database = {
             foreignKeyName: "check_ins_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "check_ins_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -269,13 +277,6 @@ export type Database = {
             foreignKeyName: "coupons_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "coupons_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -326,13 +327,6 @@ export type Database = {
           width?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "establishment_photos_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "establishment_photos_establishment_id_fkey"
             columns: ["establishment_id"]
@@ -544,13 +538,6 @@ export type Database = {
             foreignKeyName: "feed_events_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "feed_events_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -749,13 +736,6 @@ export type Database = {
             foreignKeyName: "posts_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -837,13 +817,6 @@ export type Database = {
             foreignKeyName: "reviews_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -892,13 +865,6 @@ export type Database = {
             foreignKeyName: "route_banners_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
-            referencedRelation: "route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "route_banners_route_id_fkey"
-            columns: ["route_id"]
-            isOneToOne: false
             referencedRelation: "routes"
             referencedColumns: ["id"]
           },
@@ -934,13 +900,6 @@ export type Database = {
             foreignKeyName: "route_stops_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "route_stops_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -950,13 +909,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_checkins_detailed"
             referencedColumns: ["establishment_id"]
-          },
-          {
-            foreignKeyName: "route_stops_route_id_fkey"
-            columns: ["route_id"]
-            isOneToOne: false
-            referencedRelation: "route_insights"
-            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "route_stops_route_id_fkey"
@@ -1133,13 +1085,6 @@ export type Database = {
             foreignKeyName: "user_favorites_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_favorites_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -1156,55 +1101,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "favorite_folders"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_memories: {
-        Row: {
-          caption: string | null
-          created_at: string | null
-          establishment_id: string | null
-          id: string
-          image_url: string
-          user_id: string
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string | null
-          establishment_id?: string | null
-          id?: string
-          image_url: string
-          user_id: string
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string | null
-          establishment_id?: string | null
-          id?: string
-          image_url?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_memories_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_memories_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_memories_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "user_checkins_detailed"
-            referencedColumns: ["establishment_id"]
           },
         ]
       }
@@ -1307,101 +1203,6 @@ export type Database = {
           },
         ]
       }
-      user_route_stops: {
-        Row: {
-          created_at: string | null
-          establishment_id: string
-          id: string
-          stop_order: number
-          user_route_id: string
-          visited: boolean | null
-          visited_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          establishment_id: string
-          id?: string
-          stop_order: number
-          user_route_id: string
-          visited?: boolean | null
-          visited_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          establishment_id?: string
-          id?: string
-          stop_order?: number
-          user_route_id?: string
-          visited?: boolean | null
-          visited_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_route_stops_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_route_stops_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "establishments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_route_stops_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
-            referencedRelation: "user_checkins_detailed"
-            referencedColumns: ["establishment_id"]
-          },
-          {
-            foreignKeyName: "user_route_stops_user_route_id_fkey"
-            columns: ["user_route_id"]
-            isOneToOne: false
-            referencedRelation: "user_routes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_routes: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          started_at: string | null
-          status: string | null
-          title: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          started_at?: string | null
-          status?: string | null
-          title: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          started_at?: string | null
-          status?: string | null
-          title?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_saved_posts: {
         Row: {
           created_at: string | null
@@ -1474,13 +1275,6 @@ export type Database = {
             foreignKeyName: "user_timeline_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "establishment_route_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_timeline_establishment_id_fkey"
-            columns: ["establishment_id"]
-            isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -1509,105 +1303,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_users_view: {
-        Row: {
-          activity_status: string | null
-          age: number | null
-          age_group: string | null
-          avatar_url: string | null
-          birth_date: string | null
-          checkins: number | null
-          city: string | null
-          country: string | null
-          coupons: number | null
-          created_at: string | null
-          email: string | null
-          favorite_folders: number | null
-          gender: string | null
-          gender_label: string | null
-          id: string | null
-          is_active: boolean | null
-          last_seen_at: string | null
-          memories: number | null
-          name: string | null
-          phone: string | null
-          reactions: number | null
-          reviews_count: number | null
-          routes: number | null
-          saved_places: number | null
-          state: string | null
-          travel_since: string | null
-        }
-        Insert: {
-          activity_status?: never
-          age?: never
-          age_group?: never
-          avatar_url?: string | null
-          birth_date?: string | null
-          checkins?: never
-          city?: string | null
-          country?: string | null
-          coupons?: never
-          created_at?: string | null
-          email?: string | null
-          favorite_folders?: never
-          gender?: string | null
-          gender_label?: never
-          id?: string | null
-          is_active?: boolean | null
-          last_seen_at?: string | null
-          memories?: never
-          name?: string | null
-          phone?: string | null
-          reactions?: never
-          reviews_count?: never
-          routes?: never
-          saved_places?: never
-          state?: string | null
-          travel_since?: string | null
-        }
-        Update: {
-          activity_status?: never
-          age?: never
-          age_group?: never
-          avatar_url?: string | null
-          birth_date?: string | null
-          checkins?: never
-          city?: string | null
-          country?: string | null
-          coupons?: never
-          created_at?: string | null
-          email?: string | null
-          favorite_folders?: never
-          gender?: string | null
-          gender_label?: never
-          id?: string | null
-          is_active?: boolean | null
-          last_seen_at?: string | null
-          memories?: never
-          name?: string | null
-          phone?: string | null
-          reactions?: never
-          reviews_count?: never
-          routes?: never
-          saved_places?: never
-          state?: string | null
-          travel_since?: string | null
-        }
-        Relationships: []
-      }
-      establishment_route_insights: {
-        Row: {
-          category: string | null
-          id: string | null
-          name: string | null
-          slug: string | null
-          times_in_suggested_routes: number | null
-          times_in_user_routes: number | null
-          times_visited_in_routes: number | null
-        }
-        Relationships: []
-      }
       feed_analytics: {
         Row: {
           category: string | null
@@ -1624,20 +1319,6 @@ export type Database = {
           shares: number | null
           slug: string | null
           total_reactions: number | null
-        }
-        Relationships: []
-      }
-      route_insights: {
-        Row: {
-          completion_rate_pct: number | null
-          difficulty: string | null
-          duration: string | null
-          id: string | null
-          in_progress: number | null
-          is_featured: boolean | null
-          title: string | null
-          total_completed: number | null
-          total_started: number | null
         }
         Relationships: []
       }
@@ -1711,6 +1392,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       move_favorite_to_folder: {
         Args: { p_establishment_id: string; p_target_folder_id?: string }
         Returns: Json
@@ -1758,12 +1440,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1787,11 +1469,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1812,11 +1494,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1837,11 +1519,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1854,11 +1536,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
