@@ -1303,6 +1303,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users_view: {
+        Row: {
+          activity_status: string | null
+          age: number | null
+          age_group: string | null
+          avatar_url: string | null
+          birth_date: string | null
+          checkins: number | null
+          city: string | null
+          country: string | null
+          coupons: number | null
+          created_at: string | null
+          email: string | null
+          favorite_folders: number | null
+          gender: string | null
+          gender_label: string | null
+          id: string | null
+          is_active: boolean | null
+          last_seen_at: string | null
+          name: string | null
+          phone: string | null
+          reactions: number | null
+          reviews_count: number | null
+          routes: number | null
+          saved_places: number | null
+          state: string | null
+          travel_since: string | null
+        }
+        Relationships: []
+      }
       feed_analytics: {
         Row: {
           category: string | null
@@ -1353,6 +1383,17 @@ export type Database = {
     }
     Functions: {
       admin_delete_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_user_activity_counts: {
+        Args: { _uid: string }
+        Returns: {
+          checkins: number
+          coupons: number
+          favorite_folders: number
+          reactions: number
+          reviews_count: number
+          saved_places: number
+        }[]
+      }
       decrement_reaction: {
         Args: { p_emoji: string; p_post_id: string }
         Returns: undefined
