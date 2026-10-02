@@ -1303,6 +1303,90 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users_view: {
+        Row: {
+          activity_status: string | null
+          age: number | null
+          age_group: string | null
+          avatar_url: string | null
+          birth_date: string | null
+          checkins: number | null
+          city: string | null
+          country: string | null
+          coupons: number | null
+          created_at: string | null
+          email: string | null
+          favorite_folders: number | null
+          gender: string | null
+          gender_label: string | null
+          id: string | null
+          is_active: boolean | null
+          last_seen_at: string | null
+          name: string | null
+          phone: string | null
+          reactions: number | null
+          reviews_count: number | null
+          routes: number | null
+          saved_places: number | null
+          state: string | null
+          travel_since: string | null
+        }
+        Insert: {
+          activity_status?: never
+          age?: never
+          age_group?: never
+          avatar_url?: string | null
+          birth_date?: string | null
+          checkins?: never
+          city?: string | null
+          country?: string | null
+          coupons?: never
+          created_at?: string | null
+          email?: string | null
+          favorite_folders?: never
+          gender?: string | null
+          gender_label?: never
+          id?: string | null
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          name?: string | null
+          phone?: string | null
+          reactions?: never
+          reviews_count?: never
+          routes?: never
+          saved_places?: never
+          state?: string | null
+          travel_since?: string | null
+        }
+        Update: {
+          activity_status?: never
+          age?: never
+          age_group?: never
+          avatar_url?: string | null
+          birth_date?: string | null
+          checkins?: never
+          city?: string | null
+          country?: string | null
+          coupons?: never
+          created_at?: string | null
+          email?: string | null
+          favorite_folders?: never
+          gender?: string | null
+          gender_label?: never
+          id?: string | null
+          is_active?: boolean | null
+          last_seen_at?: string | null
+          name?: string | null
+          phone?: string | null
+          reactions?: never
+          reviews_count?: never
+          routes?: never
+          saved_places?: never
+          state?: string | null
+          travel_since?: string | null
+        }
+        Relationships: []
+      }
       feed_analytics: {
         Row: {
           category: string | null
