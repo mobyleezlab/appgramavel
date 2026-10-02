@@ -136,8 +136,8 @@ export default function Feed() {
     if (!user) return;
     let cancelled = false;
     async function loadRouteEstablishments() {
-      const { data: routes } = await supabase
-        .from("user_routes" as any)
+      const { data: routes } = await (supabase as any)
+        .from("user_routes")
         .select(
           "id, user_route_stops!inner(establishment_id, visited, establishment:establishments(id, name, slug, latitude, longitude))"
         )

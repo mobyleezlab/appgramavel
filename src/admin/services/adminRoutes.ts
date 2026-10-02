@@ -29,25 +29,25 @@ export async function getRouteKPIs(period: Period = 30) {
 
   const [routesRes, urCurr, urPrev, stopsVisitedCurr, stopsVisitedPrev] = await Promise.all([
     supabase.from("routes").select("id", { count: "exact", head: true }),
-    supabase
-      .from("user_routes" as any)
+    (supabase as any)
+      .from("user_routes")
       .select("id, status, started_at, completed_at, created_at, title")
       .gte("created_at", sinceIso),
     prevSinceIso
-      ? supabase
-          .from("user_routes" as any)
+      ? (supabase as any)
+          .from("user_routes")
           .select("id, status, started_at, completed_at")
           .gte("created_at", prevSinceIso)
           .lt("created_at", prevUntilIso!)
       : Promise.resolve({ data: [] as any[] }),
-    supabase
-      .from("user_route_stops" as any)
+    (supabase as any)
+      .from("user_route_stops")
       .select("id", { count: "exact", head: true })
       .eq("visited", true)
       .gte("visited_at", sinceIso),
     prevSinceIso
-      ? supabase
-          .from("user_route_stops" as any)
+      ? (supabase as any)
+          .from("user_route_stops")
           .select("id", { count: "exact", head: true })
           .eq("visited", true)
           .gte("visited_at", prevSinceIso)
@@ -115,8 +115,8 @@ export async function getSuggestedRoutesPerformance(period: Period = 30) {
     .select("id, title, image_url, duration, difficulty, is_featured, sort_order, route_stops(id)")
     .order("sort_order");
 
-  const { data: userRoutes } = await supabase
-    .from("user_routes" as any)
+  const { data: userRoutes } = await (supabase as any)
+    .from("user_routes")
     .select("id, title, status, started_at, updated_at")
     .gte("created_at", sinceIso);
 
@@ -155,8 +155,8 @@ export async function getSuggestedRoutesPerformance(period: Period = 30) {
 export async function listUserRoutes(period: Period = 30, limit = 50) {
   const { sinceIso } = periodRange(period);
 
-  const { data } = await supabase
-    .from("user_routes" as any)
+  const { data } = await (supabase as any)
+    .from("user_routes")
     .select("id, title, status, created_at, completed_at, user_id, user_route_stops(id, visited)")
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })
@@ -291,8 +291,8 @@ export async function getRouteWithStops(id: string) {
 
 // Promove um roteiro de usuário para roteiro sugerido oficial
 export async function promoteUserRouteToSuggested(userRouteId: string) {
-  const { data: ur } = await supabase
-    .from("user_routes" as any)
+  const { data: ur } = await (supabase as any)
+    .from("user_routes")
     .select("title, description, user_route_stops(establishment_id, stop_order)")
     .eq("id", userRouteId)
     .single();
@@ -427,8 +427,8 @@ export async function getRouteAdminInsights(period: Period = 30) {
 
   // Roteiros personalizados em volume
   const { sinceIso } = periodRange(period);
-  const { data: ur } = await supabase
-    .from("user_routes" as any)
+  const { data: ur } = await (supabase as any)
+    .from("user_routes")
     .select("id")
     .gte("created_at", sinceIso);
   if ((ur?.length ?? 0) >= 5) {

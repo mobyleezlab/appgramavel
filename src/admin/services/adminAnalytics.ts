@@ -411,8 +411,8 @@ export async function getFeedInsights(days: number | "all" = 7) {
 
 // ---------- Routes (kept) ----------
 export async function getRouteInsights() {
-  const { data } = await supabase
-    .from("user_routes" as any)
+  const { data } = await (supabase as any)
+    .from("user_routes")
     .select("title, status")
     .eq("status", "completed");
 
