@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { CloseButton } from "@/components/ui/CloseButton";
 import {
-  getRoute, distanceMeters, type RouteResult, type RouteStep,
+  getRoute, distanceMeters, snapToPolyline, type RouteResult, type RouteStep,
 } from "@/lib/routing";
 
 interface NavigationViewProps {
@@ -158,8 +158,19 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
     if (!navigator.geolocation) return;
     const id = navigator.geolocation.watchPosition(
       (pos) => {
-        if (pos.coords.accuracy && pos.coords.accuracy > 50) return;
-        const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const acc = pos.coords.accuracy ?? 0;
+        // Descarta leituras muito imprecisas, mas aceita a primeira para não travar
+        if (acc > 100 && prevCoordsRef.current) return;
+        let next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        // Suaviza pequenos tremores do GPS (média ponderada pela precisão)
+        if (prevCoordsRef.current && acc > 0) {
+          const prev = prevCoordsRef.current;
+          const moved = distanceMeters(prev, next);
+          if (moved < acc * 0.5) {
+            const w = 0.35;
+            next = { lat: prev.lat + (next.lat - prev.lat) * w, lng: prev.lng + (next.lng - prev.lng) * w };
+          }
+        }
         if (typeof pos.coords.heading === "number" && !Number.isNaN(pos.coords.heading)) {
           setHeading(pos.coords.heading);
         } else if (prevCoordsRef.current) {
@@ -181,7 +192,7 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
         setCoords(next);
       },
       (err) => console.warn("watchPosition error", err),
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 },
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 },
     );
     watchIdRef.current = id;
     return () => {
@@ -211,13 +222,15 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
       userMarkerRef.current = L.marker([coords.lat, coords.lng], {
         icon: userIcon, zIndexOffset: 1000, interactive: false,
       }).addTo(map);
-    } else {
-      userMarkerRef.current.setLatLng([coords.lat, coords.lng]);
     }
+    // Gruda o marcador na rota quando o usuário está sobre ela
+    const snap = route ? snapToPolyline(coords, route.coordinates) : null;
+    const shown = snap && snap.distanceM < 25 ? snap.point : coords;
+    userMarkerRef.current.setLatLng([shown.lat, shown.lng]);
     if (recentering) {
-      map.setView([coords.lat, coords.lng], 18, { animate: true });
+      map.setView([shown.lat, shown.lng], Math.max(map.getZoom() || 18, 17), { animate: true });
     }
-  }, [coords, recentering]);
+  }, [coords, recentering, route]);
 
   // Rotação da seta sem recriar o ícone (preserva transição CSS)
   useEffect(() => {
@@ -261,7 +274,10 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
     const dToManeuver = distanceMeters(coords, { lat: target[0], lng: target[1] });
     setDistanceToManeuver(dToManeuver);
 
-    const remaining = route.steps.slice(idx).reduce((acc, s) => acc + s.distanceM, 0);
+    const snap = snapToPolyline(coords, route.coordinates);
+    const remaining = snap
+      ? snap.remainingM + snap.distanceM
+      : route.steps.slice(idx).reduce((acc, s) => acc + s.distanceM, 0);
     setRemainingM(Math.max(remaining, distToDest));
 
     // Tempo restante real: soma dos steps + proporção do step atual baseada na distância
@@ -274,15 +290,8 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
     setRemainingS(Math.max(0, currentSecs + futureSecs));
 
     // Recalcular rota apenas se realmente desviou + debounce 8s + flag
-    const dToCurrentStep = distanceMeters(coords, {
-      lat: route.steps[idx].location[0], lng: route.steps[idx].location[1],
-    });
-    const dToNextStep = route.steps[idx + 1]
-      ? distanceMeters(coords, {
-          lat: route.steps[idx + 1].location[0], lng: route.steps[idx + 1].location[1],
-        })
-      : Infinity;
-    const offRoute = Math.min(dToCurrentStep, dToNextStep) > 120;
+    // Desvio medido contra a linha da rota (não só os pontos de manobra)
+    const offRoute = (snap?.distanceM ?? Infinity) > 50;
     const now = Date.now();
     if (offRoute && !recalcInProgressRef.current && now - lastRecalcAtRef.current > 8000) {
       recalcInProgressRef.current = true;
