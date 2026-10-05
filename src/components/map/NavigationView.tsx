@@ -93,7 +93,7 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
     });
     L.tileLayer(
       "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { maxZoom: 19, subdomains: "abcd" },
+      { maxZoom: 19 },
     ).addTo(map);
 
     // Pin destino — gradiente do brand (transform consolidado)
