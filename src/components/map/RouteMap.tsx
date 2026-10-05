@@ -62,8 +62,8 @@ export default function RouteMap({ user, destination, onRouteCalculated }: Route
     });
 
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      { maxZoom: 19, subdomains: "abcd" }
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 19 }
     ).addTo(map);
 
     L.marker([destination.lat, destination.lng], { icon: createDestinationIcon() }).addTo(map);

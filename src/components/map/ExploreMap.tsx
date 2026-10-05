@@ -140,13 +140,13 @@ export default function ExploreMap({ onEstablishmentClick }: ExploreMapProps) {
     });
 
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      { maxZoom: 19, subdomains: "abcd" }
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 19,  }
     ).addTo(map);
 
     L.control
       .attribution({ position: "bottomright", prefix: false })
-      .addAttribution('© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>')
+      .addAttribution('© <a href="https://www.openstreetmap.org/copyright">OSM</a>')
       .addTo(map);
 
     setTimeout(() => {
