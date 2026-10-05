@@ -92,7 +92,7 @@ export default function NavigationView({ destination, initialRoute, onExit }: Na
       zoomSnap: 0.25,
     });
     L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       { maxZoom: 19, subdomains: "abcd" },
     ).addTo(map);
 
