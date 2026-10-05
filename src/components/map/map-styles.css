@@ -25,3 +25,11 @@
     opacity: 0;
   }
 }
+
+/* Brand-tinted base map: soft, desaturated tiles with a light primary hue */
+.leaflet-container {
+  background: hsl(var(--muted));
+}
+.leaflet-tile-pane {
+  filter: grayscale(0.85) sepia(0.15) hue-rotate(190deg) saturate(1.6) brightness(1.06) contrast(0.92);
+}
