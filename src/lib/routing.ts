@@ -129,3 +129,39 @@ export function distanceMeters(
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
+
+/**
+ * Projects a point onto a polyline ([lat,lng][]) using a local equirectangular
+ * approximation. Returns the snapped point, the distance (m) from the original
+ * point to the line, the segment index and the remaining distance (m) along the line.
+ */
+export function snapToPolyline(
+  p: { lat: number; lng: number },
+  line: [number, number][],
+): { point: { lat: number; lng: number }; distanceM: number; segmentIdx: number; remainingM: number } | null {
+  if (line.length < 2) return null;
+  const R = 6371000;
+  const cosLat = Math.cos((p.lat * Math.PI) / 180);
+  const toXY = (lat: number, lng: number) => [
+    ((lng - p.lng) * Math.PI / 180) * R * cosLat,
+    ((lat - p.lat) * Math.PI / 180) * R,
+  ];
+  let best = { d: Infinity, i: 0, t: 0, x: 0, y: 0 };
+  for (let i = 0; i < line.length - 1; i++) {
+    const [ax, ay] = toXY(line[i][0], line[i][1]);
+    const [bx, by] = toXY(line[i + 1][0], line[i + 1][1]);
+    const dx = bx - ax, dy = by - ay;
+    const len2 = dx * dx + dy * dy;
+    const t = len2 > 0 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0;
+    const x = ax + t * dx, y = ay + t * dy;
+    const d = Math.hypot(x, y);
+    if (d < best.d) best = { d, i, t, x, y };
+  }
+  const a = line[best.i], b = line[best.i + 1];
+  const point = { lat: a[0] + (b[0] - a[0]) * best.t, lng: a[1] + (b[1] - a[1]) * best.t };
+  let remaining = distanceMeters(point, { lat: b[0], lng: b[1] });
+  for (let i = best.i + 1; i < line.length - 1; i++) {
+    remaining += distanceMeters({ lat: line[i][0], lng: line[i][1] }, { lat: line[i + 1][0], lng: line[i + 1][1] });
+  }
+  return { point, distanceM: best.d, segmentIdx: best.i, remainingM: remaining };
+}
