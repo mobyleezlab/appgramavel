@@ -330,7 +330,8 @@ export default function NotificationsPage() {
   async function handleDelete(id: string) {
     const { error } = await deleteNotification(id);
     if (error) toast.error("Erro ao excluir");
-    else { toast.success("Excluída"); load(); }
+    else { toast.success("Excluída para todos os usuários"); load(); }
+    setDeleteTarget(null);
   }
 
   async function handleDuplicate(id: string) {
@@ -497,7 +498,7 @@ export default function NotificationsPage() {
                         <Button variant="outline" size="sm" onClick={() => handleDuplicate(n.id)} title="Duplicar">
                           <Copy className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(n.id)} title="Excluir">
+                        <Button variant="outline" size="sm" onClick={() => setDeleteTarget(n)} title="Excluir" aria-label="Excluir notificação">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
