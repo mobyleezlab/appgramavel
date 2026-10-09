@@ -24,6 +24,10 @@ import {
 import ImageUploadCrop from "../components/ImageUploadCrop";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KpiCard } from "../components/ui/KpiCard";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ---------- Mobile preview ----------
 function NotificationPreview({ p }: { p: NotificationPayload }) {
@@ -303,6 +307,7 @@ export default function NotificationsPage() {
   const [list, setList] = useState<any[]>([]);
   const [insights, setInsights] = useState<{ type: string; text: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   async function load() {
     setLoading(true);
