@@ -510,6 +510,28 @@ export default function NotificationsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir notificação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.sent
+                ? "Esta notificação já foi enviada. Ao excluir, ela também será removida da caixa de notificações de todos os usuários. Esta ação não pode ser desfeita."
+                : "Esta ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
