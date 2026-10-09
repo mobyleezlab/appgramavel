@@ -24,6 +24,10 @@ import {
 import ImageUploadCrop from "../components/ImageUploadCrop";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KpiCard } from "../components/ui/KpiCard";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ---------- Mobile preview ----------
 function NotificationPreview({ p }: { p: NotificationPayload }) {
@@ -303,6 +307,7 @@ export default function NotificationsPage() {
   const [list, setList] = useState<any[]>([]);
   const [insights, setInsights] = useState<{ type: string; text: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   async function load() {
     setLoading(true);
@@ -325,7 +330,8 @@ export default function NotificationsPage() {
   async function handleDelete(id: string) {
     const { error } = await deleteNotification(id);
     if (error) toast.error("Erro ao excluir");
-    else { toast.success("Excluída"); load(); }
+    else { toast.success("Excluída para todos os usuários"); load(); }
+    setDeleteTarget(null);
   }
 
   async function handleDuplicate(id: string) {
@@ -492,7 +498,7 @@ export default function NotificationsPage() {
                         <Button variant="outline" size="sm" onClick={() => handleDuplicate(n.id)} title="Duplicar">
                           <Copy className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDelete(n.id)} title="Excluir">
+                        <Button variant="outline" size="sm" onClick={() => setDeleteTarget(n)} title="Excluir" aria-label="Excluir notificação">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -504,6 +510,28 @@ export default function NotificationsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir notificação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.sent
+                ? "Esta notificação já foi enviada. Ao excluir, ela também será removida da caixa de notificações de todos os usuários. Esta ação não pode ser desfeita."
+                : "Esta ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

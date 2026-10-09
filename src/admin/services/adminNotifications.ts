@@ -130,6 +130,12 @@ export async function updateNotification(id: string, payload: Partial<Notificati
 }
 
 export async function deleteNotification(id: string) {
+  // Remove primeiro as cópias entregues aos usuários, depois o registro do admin
+  const { error: userNotifError } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("reference_id", id);
+  if (userNotifError) return { error: userNotifError };
   return supabase.from("admin_notifications").delete().eq("id", id);
 }
 
