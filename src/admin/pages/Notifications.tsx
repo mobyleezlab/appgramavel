@@ -452,7 +452,7 @@ export default function NotificationsPage() {
               {loading ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
               ) : list.length === 0 ? (
-                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Sem notificações no período</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhuma notificação criada ainda</TableCell></TableRow>
               ) : list.map((n: any) => {
                 const s = statusOf(n);
                 const when = n.sent_at ? new Date(n.sent_at).toLocaleString("pt-BR")
