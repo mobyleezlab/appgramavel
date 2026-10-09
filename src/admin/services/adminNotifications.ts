@@ -352,12 +352,15 @@ export async function getNotificationPerformance(adminNotifId: string) {
 
 export async function listNotificationsWithPerformance(period: Period = 30) {
   const { sinceIso } = periodRange(period);
-  const { data: list } = await supabase
+  let query = supabase
     .from("admin_notifications")
     .select("*")
-    .or(`created_at.gte.${sinceIso},scheduled_at.gte.${sinceIso}`)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(500);
+  if (period !== "all") {
+    query = query.or(`created_at.gte.${sinceIso},scheduled_at.gte.${sinceIso}`);
+  }
+  const { data: list } = await query;
 
   const enriched = await Promise.all((list ?? []).map(async (n: any) => {
     const perf = n.sent ? await getNotificationPerformance(n.id) : { reach: 0, read: 0, clicks: 0, readRate: "0", ctr: "0" };
