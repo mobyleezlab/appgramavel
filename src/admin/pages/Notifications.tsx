@@ -313,7 +313,7 @@ export default function NotificationsPage() {
     setLoading(true);
     const [k, l, i] = await Promise.all([
       getNotificationKPIs(period),
-      listNotificationsWithPerformance(period),
+      listNotificationsWithPerformance("all"),
       getNotificationInsights(period),
     ]);
     setKpis(k); setList(l); setInsights(i);
