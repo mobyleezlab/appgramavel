@@ -5,13 +5,15 @@ export async function getCoupons() {
   return supabase
     .from("coupons")
     .select("*, establishment:establishments(id,name,logo_url)")
-    .eq("status", "active");
+    .eq("status", "active")
+    .eq("is_active", true);
 }
 
 export async function getAllCoupons() {
   return supabase
     .from("coupons")
-    .select("*, establishment:establishments(id,name,logo_url)");
+    .select("*, establishment:establishments(id,name,logo_url)")
+    .eq("is_active", true);
 }
 
 async function resolveUserId(userId?: string): Promise<string | null> {

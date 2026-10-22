@@ -13,6 +13,8 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import { Plus, Pencil, Trash2, Search, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import QRCodeSVG from "react-qr-code";
+import { Switch } from "@/components/ui/switch";
+import { setCouponVisibility } from "../services/adminCoupons";
 
 const CATEGORIES = ["Todos", "Gastronomia", "Hospedagem", "Compras", "Lazer", "Beleza"];
 const STATUSES = ["Todos", "active", "expired"];
@@ -27,6 +29,7 @@ export default function CouponsPage() {
   const [editing, setEditing] = useState<any>(null);
   const [establishments, setEstablishments] = useState<any[]>([]);
   const [qrOpen, setQrOpen] = useState<string | null>(null);
+  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
   const [form, setForm] = useState({
     title: "", code: "", category: "", image: "", expires_at: "",
@@ -116,6 +119,26 @@ export default function CouponsPage() {
     load();
   }
 
+  async function handleVisibility(coupon: any, isActive: boolean) {
+    if (updatingIds.has(coupon.id)) return;
+    setUpdatingIds(previous => new Set(previous).add(coupon.id));
+    setCoupons(previous => previous.map(item => item.id === coupon.id ? { ...item, is_active: isActive } : item));
+    try {
+      const { error } = await setCouponVisibility(coupon.id, isActive);
+      if (error) throw error;
+      toast.success(isActive ? "Cupom visível para os usuários" : "Cupom ocultado para os usuários");
+    } catch {
+      setCoupons(previous => previous.map(item => item.id === coupon.id ? { ...item, is_active: coupon.is_active } : item));
+      toast.error("Não foi possível alterar a visibilidade do cupom");
+    } finally {
+      setUpdatingIds(previous => {
+        const next = new Set(previous);
+        next.delete(coupon.id);
+        return next;
+      });
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -147,14 +170,15 @@ export default function CouponsPage() {
               <TableHead>Categoria</TableHead>
               <TableHead>Expira em</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Exibir no app</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum cupom encontrado</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum cupom encontrado</TableCell></TableRow>
             ) : filtered.map(c => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">{c.title}</TableCell>
@@ -166,6 +190,14 @@ export default function CouponsPage() {
                     label={c.status ?? "active"}
                     variant={c.status === "active" ? "success" : c.status === "expired" ? "muted" : "info"}
                   />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2 min-h-12">
+                    <Switch checked={couponVisibility(c)} disabled={updatingIds.has(c.id)}
+                      onCheckedChange={checked => handleVisibility(c, checked)}
+                      aria-label={`Exibir ${c.title} no app`} />
+                    <span className="text-sm text-muted-foreground">{couponVisibility(c) ? "Ativado" : "Desativado"}</span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
@@ -260,4 +292,8 @@ export default function CouponsPage() {
 
 function generateCode() {
   return "GRAM" + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function couponVisibility(coupon: { is_active?: boolean }) {
+  return coupon.is_active !== false;
 }

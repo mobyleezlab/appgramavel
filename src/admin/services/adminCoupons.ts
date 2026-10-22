@@ -16,6 +16,10 @@ export async function updateCoupon(id: string, data: Record<string, unknown>) {
   return supabase.from("coupons").update(data as never).eq("id", id).select().single();
 }
 
+export async function setCouponVisibility(id: string, isActive: boolean) {
+  return supabase.from("coupons").update({ is_active: isActive }).eq("id", id).select("id, is_active").single();
+}
+
 export async function deleteCoupon(id: string) {
   return supabase.from("coupons").delete().eq("id", id);
 }
