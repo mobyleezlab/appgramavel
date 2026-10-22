@@ -4,16 +4,16 @@ import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { CategoryBar } from "@/components/layout/CategoryBar";
 import { CouponCard } from "@/components/coupons/CouponCard";
-import { MOCK_COUPONS, type Coupon } from "@/data/mock";
+import { type Coupon } from "@/data/mock";
 import { getAllCoupons } from "@/services/coupons";
 
 export default function Coupons() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [coupons, setCoupons] = useState<Coupon[]>(MOCK_COUPONS);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
 
   useEffect(() => {
     getAllCoupons().then(({ data }) => {
-      if (data && data.length > 0) {
+      if (data) {
         setCoupons(data.map((c: any) => ({
           id: c.id,
           title: c.title,

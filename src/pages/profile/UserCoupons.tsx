@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Ticket, Tag, CheckCircle2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
@@ -11,7 +11,8 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { MOCK_COUPONS, type Coupon } from "@/data/mock";
+import { type Coupon } from "@/data/mock";
+import { getAllCoupons } from "@/services/coupons";
 import { useCoupons } from "@/contexts/CouponsContext";
 
 function isExpired(c: Coupon) {
@@ -81,9 +82,24 @@ export default function UserCoupons() {
   const navigate = useNavigate();
   const { savedCoupons, usedCoupons, useCoupon, isCouponUsed } = useCoupons();
   const [confirmCoupon, setConfirmCoupon] = useState<Coupon | null>(null);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
 
-  const activeCoupons = MOCK_COUPONS.filter((c) => savedCoupons.includes(c.id) && !isCouponUsed(c.id));
-  const usedList = MOCK_COUPONS.filter((c) => isCouponUsed(c.id));
+  useEffect(() => {
+    let cancelled = false;
+    getAllCoupons().then(({ data }) => {
+      if (cancelled) return;
+      setCoupons((data ?? []).map(c => ({
+        id: c.id, title: c.title, description: "", code: c.code, image: c.image ?? "",
+        establishment_id: c.establishment_id ?? "", establishment_name: c.establishment?.name ?? "",
+        establishment_avatar: c.establishment?.logo_url ?? "", status: c.status ?? "active",
+        expires_at: c.expires_at, category: c.category ?? "",
+      })));
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const activeCoupons = coupons.filter((c) => savedCoupons.includes(c.id) && !isCouponUsed(c.id));
+  const usedList = coupons.filter((c) => isCouponUsed(c.id));
 
   const handleConfirmUse = () => {
     if (confirmCoupon) {

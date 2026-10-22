@@ -6,7 +6,7 @@ import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Card } from "@/components/ui/card";
 import { CouponCard } from "@/components/coupons/CouponCard";
-import { CATEGORIES, MOCK_ESTABLISHMENTS, MOCK_COUPONS, type Establishment } from "@/data/mock";
+import { CATEGORIES, MOCK_ESTABLISHMENTS, type Establishment } from "@/data/mock";
 import { getEstablishmentsByCategory } from "@/services/establishments";
 import { getAllCoupons } from "@/services/coupons";
 import { trackExplore } from "@/lib/exploreTracking";
@@ -96,7 +96,7 @@ export default function ExploreCategory() {
             category: c.category || "",
           })));
         } else {
-          setCategoryCoupons(MOCK_COUPONS);
+          setCategoryCoupons([]);
         }
       });
     } else {
