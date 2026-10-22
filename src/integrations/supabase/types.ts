@@ -609,6 +609,7 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          campaign_id: string | null
           created_at: string | null
           id: string
           image_url: string | null
@@ -622,6 +623,7 @@ export type Database = {
         }
         Insert: {
           body?: string | null
+          campaign_id?: string | null
           created_at?: string | null
           id?: string
           image_url?: string | null
@@ -635,6 +637,7 @@ export type Database = {
         }
         Update: {
           body?: string | null
+          campaign_id?: string | null
           created_at?: string | null
           id?: string
           image_url?: string | null
@@ -646,7 +649,15 @@ export type Database = {
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "admin_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       photo_reaction_counts: {
         Row: {
@@ -1401,6 +1412,10 @@ export type Database = {
       delete_folder: {
         Args: { p_folder_id: string; p_mode?: string }
         Returns: Json
+      }
+      dispatch_admin_notification: {
+        Args: { p_notification_id: string }
+        Returns: number
       }
       get_post_reaction_counts: {
         Args: { p_post_id: string }
