@@ -1,0 +1,1 @@
+ALTER FUNCTION public.dispatch_admin_notification(uuid) SECURITY INVOKER;

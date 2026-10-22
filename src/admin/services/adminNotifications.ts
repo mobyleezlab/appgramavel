@@ -1,7 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const DEV_USER_ID = "00000000-0000-0000-0000-000000000001";
-
 // ---------- types ----------
 export type Period = 7 | 30 | 90 | "all";
 
@@ -68,7 +66,8 @@ export async function resolveAudience(seg: AudienceSegment): Promise<string[]> {
     query = query.eq("city", seg.city);
   }
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw error;
   let rows = data ?? [];
 
   if (seg.kind === "engagement") {
@@ -80,7 +79,7 @@ export async function resolveAudience(seg: AudienceSegment): Promise<string[]> {
   }
 
   const ids = rows.map(r => r.id);
-  return ids.length ? ids : [DEV_USER_ID];
+  return ids;
 }
 
 export async function estimateAudience(seg: AudienceSegment): Promise<number> {
@@ -130,13 +129,8 @@ export async function updateNotification(id: string, payload: Partial<Notificati
 }
 
 export async function deleteNotification(id: string) {
-  // Remove primeiro as cópias entregues aos usuários, depois o registro do admin
-  const { error: userNotifError } = await supabase
-    .from("notifications")
-    .delete()
-    .eq("reference_id", id);
-  if (userNotifError) return { error: userNotifError };
-  return supabase.from("admin_notifications").delete().eq("id", id);
+  // The database removes every linked delivery in the same transaction.
+  return supabase.from("admin_notifications").delete().eq("id", id).select("id").single();
 }
 
 export async function duplicateNotification(id: string) {
@@ -154,44 +148,21 @@ export async function duplicateNotification(id: string) {
 
 // ---------- send ----------
 export async function sendNotification(notifId: string) {
-  const { data: notif } = await supabase.from("admin_notifications").select("*").eq("id", notifId).single();
-  if (!notif) return { error: { message: "Notificação não encontrada" } };
-
-  const seg = decodeSegment(notif);
-  const userIds = await resolveAudience(seg);
-
-  const rows = userIds.map(uid => ({
-    user_id: uid,
-    title: notif.title,
-    body: notif.body,
-    type: notif.type || "system",
-    image_url: notif.image_url,
-    redirect_type: notif.redirect_type,
-    redirect_url: notif.redirect_url,
-    reference_id: notif.reference_id ?? notifId,
-  }));
-
-  const { error } = await supabase.from("notifications").insert(rows as never);
-  if (!error) {
-    await supabase.from("admin_notifications")
-      .update({ sent: true, sent_at: new Date().toISOString() } as never)
-      .eq("id", notifId);
-  }
-  return { error, recipients: userIds.length };
+  const { data, error } = await supabase.rpc("dispatch_admin_notification", { p_notification_id: notifId });
+  return { error, recipients: data ?? 0 };
 }
 
 export async function sendTestToCurrentUser(payload: NotificationPayload) {
-  const { data: { user } } = await supabase.auth.getUser();
-  const uid = user?.id ?? DEV_USER_ID;
-  return supabase.from("notifications").insert({
-    user_id: uid,
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { error: authError ?? { message: "Entre novamente para enviar o teste" } };
+  const { data, error } = await createNotification({
+    ...payload,
     title: `[TESTE] ${payload.title}`,
-    body: payload.body,
-    type: payload.type || "system",
-    image_url: payload.image_url ?? null,
-    redirect_type: payload.redirect_type ?? null,
-    redirect_url: payload.redirect_url ?? null,
-  } as never);
+    segment: { kind: "ids", ids: [user.id] },
+    scheduled_at: null,
+  });
+  if (error || !data) return { error: error ?? { message: "Não foi possível salvar o teste" } };
+  return sendNotification(data.id);
 }
 
 export async function cancelScheduled(id: string) {
@@ -223,7 +194,7 @@ export async function resendToUnread(id: string) {
   const { data: unread } = await supabase
     .from("notifications")
     .select("user_id")
-    .eq("reference_id", id)
+    .eq("campaign_id", id)
     .eq("read", false);
 
   const userIds = Array.from(new Set((unread ?? []).map(r => (r as any).user_id)));
@@ -238,6 +209,7 @@ export async function resendToUnread(id: string) {
     redirect_type: notif.redirect_type,
     redirect_url: notif.redirect_url,
     reference_id: id,
+    campaign_id: id,
   }));
   const { error } = await supabase.from("notifications").insert(rows as never);
   return { error, recipients: userIds.length };
@@ -334,10 +306,10 @@ export async function getNotificationKPIs(period: Period = 7) {
 export async function getNotificationPerformance(adminNotifId: string) {
   const { count: reach } = await supabase
     .from("notifications").select("*", { count: "exact", head: true })
-    .eq("reference_id", adminNotifId);
+    .eq("campaign_id", adminNotifId);
   const { count: read } = await supabase
     .from("notifications").select("*", { count: "exact", head: true })
-    .eq("reference_id", adminNotifId).eq("read", true);
+    .eq("campaign_id", adminNotifId).eq("read", true);
   const { data: clicks } = await supabase
     .from("feed_events").select("event_type")
     .eq("event_type", `notification_click:${adminNotifId}`);
@@ -352,15 +324,18 @@ export async function getNotificationPerformance(adminNotifId: string) {
 
 export async function listNotificationsWithPerformance(period: Period = 30) {
   const { sinceIso } = periodRange(period);
-  let query = supabase
-    .from("admin_notifications")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(500);
-  if (period !== "all") {
-    query = query.or(`created_at.gte.${sinceIso},scheduled_at.gte.${sinceIso}`);
+  const list = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    let query = supabase.from("admin_notifications").select("*")
+      .order("created_at", { ascending: false }).order("id", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+    if (period !== "all") query = query.or(`created_at.gte.${sinceIso},scheduled_at.gte.${sinceIso}`);
+    const { data, error } = await query;
+    if (error) throw error;
+    list.push(...(data ?? []));
+    if (!data || data.length < pageSize) break;
   }
-  const { data: list } = await query;
 
   const enriched = await Promise.all((list ?? []).map(async (n: any) => {
     const perf = n.sent ? await getNotificationPerformance(n.id) : { reach: 0, read: 0, clicks: 0, readRate: "0", ctr: "0" };
