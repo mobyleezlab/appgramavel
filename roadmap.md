@@ -1,4 +1,6 @@
 # Notification tasks
+- [ ] Add admin coupon visibility switch and apply visibility to user coupon lists.
+- [ ] Test coupon visibility persistence and filtering.
 - [x] Remove existing delivered notifications requested by the administrator (3 removed).
 - [x] Persist test and regular sends in complete admin history, linked to deliveries.
 - [x] Ensure deleting a history entry atomically removes every delivery (database verified).
