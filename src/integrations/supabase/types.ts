@@ -247,6 +247,7 @@ export type Database = {
           expires_at: string
           id: string
           image: string | null
+          is_active: boolean
           status: string | null
           title: string
         }
@@ -258,6 +259,7 @@ export type Database = {
           expires_at: string
           id?: string
           image?: string | null
+          is_active?: boolean
           status?: string | null
           title: string
         }
@@ -269,6 +271,7 @@ export type Database = {
           expires_at?: string
           id?: string
           image?: string | null
+          is_active?: boolean
           status?: string | null
           title?: string
         }
