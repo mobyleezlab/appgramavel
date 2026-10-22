@@ -1,0 +1,2 @@
+# Architecture rules
+- Link delivered admin notifications to their campaign with a cascading foreign key; send campaigns through an admin-validated database function so history and deliveries remain consistent.
