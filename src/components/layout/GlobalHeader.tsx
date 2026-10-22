@@ -23,7 +23,7 @@ export function GlobalHeader({ showBack, title = "Gramável", onBack }: GlobalHe
 
   useEffect(() => {
     getUnreadCount().then(({ data }) => setUnreadCount(data ?? 0));
-  }, []);
+  }, [notificationsOpen]);
 
   return (
     <>
