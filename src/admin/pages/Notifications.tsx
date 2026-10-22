@@ -117,7 +117,9 @@ function NotificationComposer({
 
   useEffect(() => {
     let cancelled = false;
-    estimateAudience(segment).then(n => { if (!cancelled) setEstimate(n); });
+    estimateAudience(segment).then(n => { if (!cancelled) setEstimate(n); }).catch(() => {
+      if (!cancelled) setEstimate(null);
+    });
     return () => { cancelled = true; };
   }, [audience]);
 
@@ -143,10 +145,10 @@ function NotificationComposer({
     try {
       const payload = buildPayload();
       const { data, error } = await createNotification(payload);
-      if (error || !data) { toast.error("Erro ao criar"); return; }
+      if (error || !data) { toast.error(error?.message ?? "Erro ao criar"); return; }
       if (scheduleMode === "now") {
         const res = await sendNotification((data as any).id);
-        if (res.error) toast.error("Criada, mas falhou ao enviar");
+        if (res.error) toast.error(`Salva no histórico, mas não enviada: ${res.error.message}`);
         else toast.success(`Enviada para ${res.recipients} usuário(s)`);
       } else {
         toast.success(`Agendada para ${new Date(scheduledAt).toLocaleString("pt-BR")}`);
@@ -159,9 +161,15 @@ function NotificationComposer({
 
   async function handleTest() {
     if (!p.title || !p.body) { toast.error("Preencha título e corpo"); return; }
-    const { error } = await sendTestToCurrentUser(buildPayload());
-    if (error) toast.error("Erro ao enviar teste");
-    else toast.success("Teste enviado para você");
+    setBusy(true);
+    try {
+      const { error } = await sendTestToCurrentUser(buildPayload());
+      if (error) toast.error(error.message);
+      else toast.success("Teste enviado para você e salvo no histórico");
+      onSaved();
+    } catch {
+      toast.error("Não foi possível enviar o teste. Tente novamente.");
+    } finally { setBusy(false); }
   }
 
   function applyTemplate(key: string) {
@@ -278,7 +286,7 @@ function NotificationComposer({
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 pt-2 border-t">
-          <Button variant="outline" onClick={handleTest}>
+          <Button variant="outline" onClick={handleTest} disabled={busy}>
             <Beaker className="h-4 w-4" /> Enviar teste para mim
           </Button>
           <Button onClick={handleSendOrSchedule} disabled={busy}>
@@ -308,16 +316,23 @@ export default function NotificationsPage() {
   const [insights, setInsights] = useState<{ type: string; text: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
+    setLoadError(false);
+    try {
     const [k, l, i] = await Promise.all([
       getNotificationKPIs(period),
       listNotificationsWithPerformance("all"),
       getNotificationInsights(period),
     ]);
     setKpis(k); setList(l); setInsights(i);
-    setLoading(false);
+    } catch {
+      setLoadError(true);
+      toast.error("Não foi possível carregar o histórico de notificações");
+    } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, [period]);
 
@@ -328,10 +343,13 @@ export default function NotificationsPage() {
   }
 
   async function handleDelete(id: string) {
+    setDeleting(true);
+    try {
     const { error } = await deleteNotification(id);
     if (error) toast.error("Erro ao excluir");
     else { toast.success("Excluída para todos os usuários"); load(); }
     setDeleteTarget(null);
+    } finally { setDeleting(false); }
   }
 
   async function handleDuplicate(id: string) {
@@ -432,7 +450,10 @@ export default function NotificationsPage() {
 
       {/* Histórico */}
       <Card>
-        <CardHeader><CardTitle className="text-lg">Histórico e desempenho</CardTitle></CardHeader>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-lg">Histórico e desempenho</CardTitle>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading} aria-label="Atualizar histórico"><RefreshCw className="h-4 w-4" /> Atualizar</Button>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -451,6 +472,8 @@ export default function NotificationsPage() {
             <TableBody>
               {loading ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Carregando...</TableCell></TableRow>
+              ) : loadError ? (
+                <TableRow><TableCell colSpan={9} className="text-center py-8 text-destructive">Histórico indisponível. Clique em Atualizar para tentar novamente.</TableCell></TableRow>
               ) : list.length === 0 ? (
                 <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Nenhuma notificação criada ainda</TableCell></TableRow>
               ) : list.map((n: any) => {
@@ -511,7 +534,7 @@ export default function NotificationsPage() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir notificação?</AlertDialogTitle>
@@ -522,12 +545,13 @@ export default function NotificationsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+              disabled={deleting}
+              onClick={(event) => { event.preventDefault(); if (deleteTarget) handleDelete(deleteTarget.id); }}
             >
-              Excluir
+              {deleting ? "Excluindo…" : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
