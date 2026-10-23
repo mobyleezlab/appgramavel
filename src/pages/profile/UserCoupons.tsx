@@ -91,7 +91,7 @@ export default function UserCoupons() {
       setCoupons((data ?? []).map(c => ({
         id: c.id, title: c.title, description: "", code: c.code, image: c.image ?? "",
         establishment_id: c.establishment_id ?? "", establishment_name: c.establishment?.name ?? "",
-        establishment_avatar: c.establishment?.logo_url ?? "", status: c.status ?? "active",
+        establishment_avatar: c.establishment?.logo_url ?? "", status: c.status === "used" ? "used" : c.status === "expired" ? "expired" : "active",
         expires_at: c.expires_at, category: c.category ?? "",
       })));
     });
