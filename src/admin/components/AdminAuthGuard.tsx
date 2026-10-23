@@ -1,44 +1,17 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getAdminAccess, type AdminAccess } from "@/admin/lib/adminMfa";
 
 export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
+  const [status, setStatus] = useState<AdminAccess | "loading">("loading");
 
   useEffect(() => {
-    async function check() {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        console.log("AdminAuthGuard: No session found", sessionError);
-        setStatus("unauthorized");
-        return;
-      }
-
-      const { data: adminRole, error: roleError } = await supabase
-        .from("admin_roles")
-        .select("id, role, is_active")
-        .eq("user_id", session.user.id)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      console.log("AdminAuthGuard Check:", { userId: session.user.id, adminRole, roleError });
-      
-      if (adminRole) {
-        setStatus("authorized");
-      } else {
-        console.log("AdminAuthGuard: User is not an active admin");
-        setStatus("unauthorized");
-      }
-    }
-
+    let active = true;
+    const check = () => getAdminAccess().then((s) => active && setStatus(s)).catch(() => active && setStatus("signed_out"));
     check();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      check();
-    });
-
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { setTimeout(check, 0); });
+    return () => { active = false; subscription.unsubscribe(); };
   }, []);
 
   if (status === "loading") {
@@ -49,7 +22,6 @@ export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status === "unauthorized") return <Navigate to="/admin/login" replace />;
-
+  if (status !== "authorized") return <Navigate to="/admin/login" replace />;
   return <>{children}</>;
 }
