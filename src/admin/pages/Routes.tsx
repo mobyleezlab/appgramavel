@@ -6,25 +6,21 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import {
-  Plus, Pencil, Copy, Trash2, MapPin, TrendingUp, TrendingDown,
-  Map, Users, CheckCircle2, Clock, Sparkles, Lightbulb, AlertTriangle,
-  ArrowUpRight,
+  Plus, Pencil, Copy, Trash2, MapPin, Star,
+  Map, Sparkles, Lightbulb, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   getRouteKPIs,
   getSuggestedRoutesPerformance,
-  listUserRoutes,
   getPersonalizedSuggestions,
   getRouteAdminInsights,
   deleteRoute,
   duplicateRoute,
-  promoteUserRouteToSuggested,
   type Period,
 } from "../services/adminRoutes";
 import RouteEditorSheet from "../components/RouteEditorSheet";
@@ -36,7 +32,6 @@ export default function RoutesPage() {
   const [period, setPeriod] = useState<Period>(30);
   const [kpis, setKpis] = useState<Awaited<ReturnType<typeof getRouteKPIs>> | null>(null);
   const [perf, setPerf] = useState<Awaited<ReturnType<typeof getSuggestedRoutesPerformance>>>([]);
-  const [userRoutes, setUserRoutes] = useState<Awaited<ReturnType<typeof listUserRoutes>>>([]);
   const [suggestions, setSuggestions] = useState<Awaited<ReturnType<typeof getPersonalizedSuggestions>>>([]);
   const [insights, setInsights] = useState<Awaited<ReturnType<typeof getRouteAdminInsights>>>([]);
   const [banners, setBanners] = useState<any[]>([]);
@@ -47,16 +42,19 @@ export default function RoutesPage() {
   const [prefill, setPrefill] = useState<{ title?: string; stops?: { establishment_id: string }[] } | null>(null);
 
   async function loadAll() {
-    const [k, p, ur, sg, ins, b] = await Promise.all([
+    try {
+    const [k, p, sg, ins, b] = await Promise.all([
       getRouteKPIs(period),
       getSuggestedRoutesPerformance(period),
-      listUserRoutes(period),
       getPersonalizedSuggestions(period),
       getRouteAdminInsights(period),
       supabase.from("route_banners").select("*").order("sort_order"),
     ]);
-    setKpis(k); setPerf(p); setUserRoutes(ur); setSuggestions(sg);
+    setKpis(k); setPerf(p); setSuggestions(sg);
     setInsights(ins); setBanners(b.data ?? []);
+    } catch {
+      toast.error("Não foi possível carregar os roteiros");
+    }
   }
 
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [period]);
@@ -70,37 +68,30 @@ export default function RoutesPage() {
   };
 
   async function toggleFeatured(id: string, current: boolean) {
-    await supabase.from("routes").update({ is_featured: !current } as never).eq("id", id);
+    const { error } = await supabase.from("routes").update({ is_featured: !current } as never).eq("id", id);
+    if (error) { toast.error("Não foi possível alterar o destaque. Tente novamente."); return; }
     loadAll();
   }
   async function handleDelete(id: string) {
-    await deleteRoute(id);
+    try { await deleteRoute(id); } catch { toast.error("Não foi possível excluir o roteiro. Tente novamente."); return; }
     toast.success("Roteiro excluído");
     loadAll();
   }
   async function handleDuplicate(id: string) {
-    await duplicateRoute(id);
+    try { await duplicateRoute(id); } catch { toast.error("Não foi possível duplicar o roteiro. Tente novamente."); return; }
     toast.success("Roteiro duplicado");
     loadAll();
   }
-  async function handlePromote(userRouteId: string) {
-    try {
-      await promoteUserRouteToSuggested(userRouteId);
-      toast.success("Promovido para sugerido");
-      loadAll();
-    } catch (e: any) { toast.error(e?.message ?? "Falha ao promover"); }
-  }
   async function toggleBanner(id: string, current: boolean) {
-    await supabase.from("route_banners").update({ active: !current } as never).eq("id", id);
+    const { error } = await supabase.from("route_banners").update({ active: !current } as never).eq("id", id);
+    if (error) { toast.error("Não foi possível alterar o banner. Tente novamente."); return; }
     loadAll();
   }
   async function deleteBanner(id: string) {
-    await supabase.from("route_banners").delete().eq("id", id);
+    const { error } = await supabase.from("route_banners").delete().eq("id", id);
+    if (error) { toast.error("Não foi possível remover o banner. Tente novamente."); return; }
     toast.success("Banner removido"); loadAll();
   }
-
-  const statusVariant = (s: string) =>
-    s === "completed" ? "success" : s === "in_progress" ? "info" : "muted";
 
   return (
     <div className="space-y-6">
@@ -113,20 +104,18 @@ export default function RoutesPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard title="Roteiros sugeridos" value={kpis?.totalSuggested ?? 0} icon={Map} />
-        <KpiCard title="Iniciados" value={kpis?.started ?? 0} icon={Users} delta={kpis?.deltas.started} />
-        <KpiCard title="Concluídos" value={kpis?.completed ?? 0} icon={CheckCircle2} delta={kpis?.deltas.completed} />
-        <KpiCard title="Taxa conclusão" value={kpis?.completionRate ?? 0} suffix="%" icon={TrendingUp} delta={kpis?.deltas.completionRate} />
-        <KpiCard title="Tempo médio" value={kpis?.avgCompletionHours ?? 0} suffix="h" icon={Clock} />
-        <KpiCard title="Personalizados" value={kpis?.personalized ?? 0} icon={Sparkles} delta={kpis?.deltas.personalized} />
+        <KpiCard title="Em destaque" value={kpis?.featured ?? 0} icon={Star} />
+        <KpiCard title="Paradas" value={kpis?.totalStops ?? 0} icon={MapPin} />
+        <KpiCard title="Média de paradas" value={kpis?.avgStops ?? 0} icon={Sparkles} />
       </div>
 
       {/* Performance + Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Performance dos roteiros sugeridos</CardTitle>
+            <CardTitle>Roteiros sugeridos</CardTitle>
             <Button size="sm" onClick={openCreate} className="gap-1"><Plus className="w-4 h-4" /> Novo roteiro</Button>
           </CardHeader>
           <CardContent>
@@ -138,10 +127,6 @@ export default function RoutesPage() {
                   <TableRow>
                     <TableHead>Roteiro</TableHead>
                     <TableHead className="text-center">Paradas</TableHead>
-                    <TableHead className="text-center">Iniciados</TableHead>
-                    <TableHead className="text-center">Concluídos</TableHead>
-                    <TableHead className="text-center">Conclusão</TableHead>
-                    <TableHead className="text-center">Abandonos</TableHead>
                     <TableHead className="text-center">Destaque</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
@@ -161,15 +146,6 @@ export default function RoutesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">{r.stops}</TableCell>
-                      <TableCell className="text-center">{r.started}</TableCell>
-                      <TableCell className="text-center">{r.completed}</TableCell>
-                      <TableCell className="text-center">
-                        <StatusBadge label={`${r.completionRate}%`}
-                          variant={r.completionRate >= 50 ? "success" : r.completionRate >= 20 ? "info" : "destructive"} />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {r.abandoned > 0 ? <span className="text-destructive font-medium">{r.abandoned}</span> : "—"}
-                      </TableCell>
                       <TableCell className="text-center">
                         <Switch checked={r.is_featured} onCheckedChange={() => toggleFeatured(r.id, r.is_featured)} />
                       </TableCell>
@@ -254,62 +230,6 @@ export default function RoutesPage() {
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Roteiros dos usuários */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Roteiros personalizados dos usuários</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {userRoutes.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">Nenhum roteiro de usuário no período.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Roteiro</TableHead>
-                  <TableHead className="text-center">Paradas</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead>Criado</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {userRoutes.map(u => (
-                  <TableRow key={u.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-7 h-7">
-                          {u.userAvatar && <AvatarImage src={u.userAvatar} />}
-                          <AvatarFallback>{u.userName.slice(0, 1)}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{u.userName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium text-sm">{u.title}</TableCell>
-                    <TableCell className="text-center text-sm">{u.stopsVisited}/{u.stopsTotal}</TableCell>
-                    <TableCell className="text-center">
-                      <StatusBadge
-                        label={u.status === "completed" ? "Concluído" : u.status === "in_progress" ? "Em curso" : "Salvo"}
-                        variant={statusVariant(u.status) as any}
-                      />
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {new Date(u.created_at).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="gap-1" onClick={() => handlePromote(u.id)}>
-                        <ArrowUpRight className="w-3 h-3" /> Promover
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           )}
         </CardContent>
       </Card>
