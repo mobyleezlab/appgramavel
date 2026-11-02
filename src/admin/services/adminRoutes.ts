@@ -16,10 +16,6 @@ function periodRange(days: Period) {
   };
 }
 
-function pctDelta(curr: number, prev: number): number | null {
-  if (prev === 0) return curr > 0 ? 100 : null;
-  return Math.round(((curr - prev) / prev) * 1000) / 10;
-}
 
 // =========================================================
 // KPIs (somente roteiros sugeridos: routes + route_stops)
