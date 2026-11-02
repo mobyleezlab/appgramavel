@@ -9,7 +9,6 @@ import { ProximityCheckinCard } from "@/components/feed/ProximityCheckinCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchPosts, fetchEstablishments, queryKeys, prefetchExploreData, prefetchPostsFilter } from "@/lib/queries";
 import { useLocation } from "@/contexts/LocationContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { createCheckIn } from "@/services/checkIns";
 import { toast } from "sonner";
