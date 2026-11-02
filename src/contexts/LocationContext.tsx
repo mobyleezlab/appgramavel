@@ -5,6 +5,8 @@ type PermissionState = "granted" | "denied" | "prompt" | "unknown";
 
 interface LocationContextType {
   coords: { lat: number; lng: number } | null;
+  /** Precisão da última leitura de GPS, em metros. */
+  accuracy: number | null;
   loading: boolean;
   hasLocation: boolean;
   city: string;
@@ -29,6 +31,7 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [permissionState, setPermissionState] = useState<PermissionState>("unknown");
   const watchIdRef = useRef<number | null>(null);
@@ -50,6 +53,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         (pos) => {
           if (pos.coords.accuracy && pos.coords.accuracy > 200) return;
           setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setAccuracy(Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null);
           setPermissionState("granted");
           stopLoading();
         },
@@ -85,6 +89,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setAccuracy(Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null);
         setPermissionState("granted");
         stopLoading();
       },
@@ -169,6 +174,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     <LocationContext.Provider
       value={{
         coords,
+        accuracy,
         loading,
         hasLocation: !!coords,
         city,
