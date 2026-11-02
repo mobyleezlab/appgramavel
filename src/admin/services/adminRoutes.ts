@@ -124,8 +124,10 @@ export async function updateRoute(
 }
 
 export async function deleteRoute(id: string) {
-  await supabase.from("route_stops").delete().eq("route_id", id);
-  await supabase.from("routes").delete().eq("id", id);
+  const stops = await supabase.from("route_stops").delete().eq("route_id", id);
+  if (stops.error) throw stops.error;
+  const route = await supabase.from("routes").delete().eq("id", id);
+  if (route.error) throw route.error;
 }
 
 export async function duplicateRoute(id: string) {
