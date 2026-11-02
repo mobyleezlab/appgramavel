@@ -109,7 +109,8 @@ export async function updateRoute(
   if (error) throw error;
 
   if (stops) {
-    await supabase.from("route_stops").delete().eq("route_id", id);
+    const { error: delErr } = await supabase.from("route_stops").delete().eq("route_id", id);
+    if (delErr) throw delErr;
     if (stops.length > 0) {
       const rows = stops.map((s, i) => ({
         route_id: id,
@@ -151,7 +152,8 @@ export async function duplicateRoute(id: string) {
       stop_order: i + 1,
       note: s.note ?? null,
     }));
-    await supabase.from("route_stops").insert(rows as never);
+    const { error: stopsErr } = await supabase.from("route_stops").insert(rows as never);
+    if (stopsErr) throw stopsErr;
   }
   return copy.id as string;
 }
