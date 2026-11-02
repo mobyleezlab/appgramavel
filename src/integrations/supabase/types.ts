@@ -29,6 +29,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_log: {
+        Row: {
+          acao: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          dados: Json | null
+          id: string
+          registro_id: string | null
+          tabela: string
+        }
+        Insert: {
+          acao: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          dados?: Json | null
+          id?: string
+          registro_id?: string | null
+          tabela: string
+        }
+        Update: {
+          acao?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          dados?: Json | null
+          id?: string
+          registro_id?: string | null
+          tabela?: string
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           body: string
@@ -148,6 +181,7 @@ export type Database = {
       }
       check_ins: {
         Row: {
+          accuracy_m: number | null
           created_at: string | null
           establishment_id: string
           id: string
@@ -157,6 +191,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accuracy_m?: number | null
           created_at?: string | null
           establishment_id: string
           id?: string
@@ -166,6 +201,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accuracy_m?: number | null
           created_at?: string | null
           establishment_id?: string
           id?: string
@@ -350,6 +386,7 @@ export type Database = {
         Row: {
           address: string | null
           category: string
+          checkin_radius_m: number
           created_at: string | null
           description: string | null
           distance_km: number | null
@@ -387,6 +424,7 @@ export type Database = {
         Insert: {
           address?: string | null
           category: string
+          checkin_radius_m?: number
           created_at?: string | null
           description?: string | null
           distance_km?: number | null
@@ -424,6 +462,7 @@ export type Database = {
         Update: {
           address?: string | null
           category?: string
+          checkin_radius_m?: number
           created_at?: string | null
           description?: string | null
           distance_km?: number | null
@@ -1416,6 +1455,7 @@ export type Database = {
         Args: { p_folder_id: string; p_mode?: string }
         Returns: Json
       }
+      delete_my_account: { Args: never; Returns: Json }
       dispatch_admin_notification: {
         Args: { p_notification_id: string }
         Returns: number
@@ -1445,6 +1485,10 @@ export type Database = {
           name: string
           total: number
         }[]
+      }
+      haversine_m: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
       }
       increment_reaction: {
         Args: { p_emoji: string; p_post_id: string }
