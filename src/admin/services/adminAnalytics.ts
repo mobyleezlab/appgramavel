@@ -409,23 +409,6 @@ export async function getFeedInsights(days: number | "all" = 7) {
   return insights.slice(0, 3);
 }
 
-// ---------- Routes (kept) ----------
-export async function getRouteInsights() {
-  const { data } = await (supabase as any)
-    .from("user_routes")
-    .select("title, status")
-    .eq("status", "completed");
-
-  const map: Record<string, number> = {};
-  data?.forEach(r => {
-    map[r.title] = (map[r.title] || 0) + 1;
-  });
-
-  return Object.entries(map)
-    .sort((a, b) => b[1] - a[1])
-    .map(([title, count]) => ({ title, count }));
-}
-
 // ============================================================
 // EXPLORE PAGE ANALYTICS
 // ============================================================

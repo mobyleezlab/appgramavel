@@ -3,15 +3,19 @@ import { getCurrentUserId } from "@/lib/auth";
 
 export async function createCheckIn(
   establishmentId: string,
-  coords?: { lat: number; lng: number },
+  coords: { lat: number; lng: number; accuracy?: number | null } | null | undefined,
   userId?: string
 ) {
+  if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) {
+    return { data: null, error: { code: "NO_COORDS", message: "Localização indisponível. Ative o GPS e tente novamente." } };
+  }
   const uid = userId ?? await getCurrentUserId();
   return supabase.from("check_ins").insert({
     user_id: uid,
     establishment_id: establishmentId,
-    latitude: coords?.lat ?? null,
-    longitude: coords?.lng ?? null,
+    latitude: coords.lat,
+    longitude: coords.lng,
+    accuracy_m: coords.accuracy != null && Number.isFinite(coords.accuracy) ? Math.round(coords.accuracy) : null,
   });
 }
 

@@ -7,9 +7,8 @@ import { CategoryBar } from "@/components/layout/CategoryBar";
 import { PostCard } from "@/components/feed/PostCard";
 import { ProximityCheckinCard } from "@/components/feed/ProximityCheckinCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchPosts, queryKeys, prefetchExploreData, prefetchPostsFilter } from "@/lib/queries";
+import { fetchPosts, fetchEstablishments, queryKeys, prefetchExploreData, prefetchPostsFilter } from "@/lib/queries";
 import { useLocation } from "@/contexts/LocationContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { createCheckIn } from "@/services/checkIns";
 import { toast } from "sonner";
@@ -48,8 +47,7 @@ export default function Feed() {
   );
 
   const [dismissedCheckin, setDismissedCheckin] = useState<string | null>(null);
-  const [routeEstablishments, setRouteEstablishments] = useState<any[]>([]);
-  const { coords } = useLocation();
+  const { coords, accuracy } = useLocation();
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -131,69 +129,46 @@ export default function Feed() {
     };
   }, [loading, selectedCategory, qc]);
 
-  // Load establishments from user's active routes (single nested query)
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    async function loadRouteEstablishments() {
-      const { data: routes } = await (supabase as any)
-        .from("user_routes")
-        .select(
-          "id, user_route_stops!inner(establishment_id, visited, establishment:establishments(id, name, slug, latitude, longitude))"
-        )
-        .eq("user_id", user!.id)
-        .in("status", ["saved", "in_progress"])
-        .eq("user_route_stops.visited", false);
+  // Banner de check-in: usa os estabelecimentos já carregados no app (com coordenadas)
+  const { data: establishments = [] } = useQuery({
+    queryKey: queryKeys.establishments(),
+    queryFn: fetchEstablishments,
+    enabled: !!user,
+  });
 
-      if (cancelled) return;
-      if (!routes || routes.length === 0) {
-        setRouteEstablishments([]);
-        return;
-      }
-
-      const seen = new Set<string>();
-      const ests: any[] = [];
-      for (const r of routes) {
-        for (const stop of (r as any).user_route_stops ?? []) {
-          const est = stop.establishment;
-          if (est && !seen.has(est.id)) {
-            seen.add(est.id);
-            ests.push(est);
-          }
-        }
-      }
-      setRouteEstablishments(ests);
-    }
-    loadRouteEstablishments();
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  // Find nearest route establishment within 300m
   const nearbyCheckin = useMemo(() => {
-    if (!coords || routeEstablishments.length === 0 || dismissedCheckin) return null;
+    if (!coords || dismissedCheckin) return null;
     let nearest: { est: any; distance: number } | null = null;
-    for (const est of routeEstablishments) {
-      if (!est.latitude || !est.longitude) continue;
+    for (const est of establishments as any[]) {
+      if (est.latitude == null || est.longitude == null) continue;
+      const radius = Number(est.checkin_radius_m) > 0 ? Number(est.checkin_radius_m) : 100;
       const d = haversineMeters(coords.lat, coords.lng, Number(est.latitude), Number(est.longitude));
-      if (d <= 300 && (!nearest || d < nearest.distance)) {
+      if (d <= radius && (!nearest || d < nearest.distance)) {
         nearest = { est, distance: d };
       }
     }
     return nearest;
-  }, [coords, routeEstablishments, dismissedCheckin]);
+  }, [coords, establishments, dismissedCheckin]);
 
   const handleCheckin = async () => {
     if (!nearbyCheckin || !user) return;
-    try {
-      await createCheckIn(nearbyCheckin.est.id, coords ? { lat: coords.lat, lng: coords.lng } : undefined, user.id);
-      toast.success(`Check-in em ${nearbyCheckin.est.name} realizado!`);
-      setDismissedCheckin(nearbyCheckin.est.id);
-      window.dispatchEvent(new CustomEvent("checkin"));
-    } catch {
-      toast.error("Erro ao fazer check-in");
+    if (!coords) {
+      toast.warning("Localização indisponível. Ative o GPS e tente novamente.");
+      return;
     }
+    const { error } = await createCheckIn(
+      nearbyCheckin.est.id,
+      { lat: coords.lat, lng: coords.lng, accuracy },
+      user.id
+    );
+    if (error) {
+      if (error.code === "P0001" || error.code === "NO_COORDS") toast.warning(error.message);
+      else toast.error("Não foi possível fazer o check-in. Tente novamente.");
+      return;
+    }
+    toast.success(`Check-in realizado! ${nearbyCheckin.est.name}`);
+    setDismissedCheckin(nearbyCheckin.est.id);
+    window.dispatchEvent(new CustomEvent("checkin"));
   };
 
   const filteredPosts = posts;
