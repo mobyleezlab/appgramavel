@@ -228,27 +228,36 @@ export default function EstablishmentForm() {
       estId = insertData.id;
     }
 
+    let photoErrors = 0;
     // Delete removed photos (those with id that are no longer in photos array)
     if (isEditing) {
       const { data: existingPhotos } = await supabase.from("establishment_photos").select("id").eq("establishment_id", id!);
       const currentIds = new Set(photos.filter(p => p.id).map(p => p.id));
       const toDelete = existingPhotos?.filter(p => !currentIds.has(p.id)) ?? [];
       for (const p of toDelete) {
-        await supabase.from("establishment_photos").delete().eq("id", p.id);
+        const { error } = await supabase.from("establishment_photos").delete().eq("id", p.id);
+        if (error) photoErrors++;
       }
     }
 
     // Save photos
     for (const photo of photos) {
       if (photo.id) {
-        await supabase.from("establishment_photos").update({ caption: photo.caption, sort_order: photo.sort_order } as never).eq("id", photo.id);
+        const { error } = await supabase.from("establishment_photos").update({ caption: photo.caption, sort_order: photo.sort_order } as never).eq("id", photo.id);
+        if (error) photoErrors++;
       } else if (estId) {
-        await supabase.from("establishment_photos").insert({
+        const { error } = await supabase.from("establishment_photos").insert({
           establishment_id: estId, url: photo.url, caption: photo.caption, sort_order: photo.sort_order,
         });
+        if (error) photoErrors++;
       }
     }
 
+    if (photoErrors > 0) {
+      toast.error(`Estabelecimento salvo, mas ${photoErrors} foto(s) não foram salvas. Tente novamente.`);
+      setSaving(false);
+      return;
+    }
     toast.success(isEditing ? "Estabelecimento atualizado" : "Estabelecimento criado");
     setSaving(false);
     navigate("/admin/estabelecimentos");

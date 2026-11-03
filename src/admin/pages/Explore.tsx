@@ -56,17 +56,19 @@ export default function ExplorePage() {
   useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [period]);
 
   async function togglePopular(id: string, current: boolean) {
-    await supabase.from("establishments").update({ is_popular: !current } as never).eq("id", id);
+    const { error } = await supabase.from("establishments").update({ is_popular: !current } as never).eq("id", id);
+    if (error) { toast.error("Não foi possível salvar. Tente novamente."); return; }
     toast.success(!current ? "Marcado como popular" : "Removido de populares");
     loadAll();
   }
 
   async function saveExperience() {
     if (!newExp.title) { toast.error("Título é obrigatório"); return; }
-    await supabase.from("experiences").insert({
+    const { error } = await supabase.from("experiences").insert({
       ...newExp,
       sort_order: experiences.length,
     } as never);
+    if (error) { toast.error("Não foi possível salvar. Tente novamente."); return; }
     setNewExp({ title: "", description: "", image_url: "", sort_order: 0 });
     toast.success("Experiência adicionada");
     loadAll();
@@ -74,19 +76,21 @@ export default function ExplorePage() {
 
   async function updateExperience() {
     if (!editing) return;
-    await supabase.from("experiences").update({
+    const { error } = await supabase.from("experiences").update({
       title: editing.title,
       description: editing.description,
       image_url: editing.image_url,
       sort_order: editing.sort_order,
     } as never).eq("id", editing.id);
+    if (error) { toast.error("Não foi possível salvar. Tente novamente."); return; }
     toast.success("Experiência atualizada");
     setEditing(null);
     loadAll();
   }
 
   async function deleteExperience(id: string) {
-    await supabase.from("experiences").delete().eq("id", id);
+    const { error } = await supabase.from("experiences").delete().eq("id", id);
+    if (error) { toast.error("Não foi possível remover. Tente novamente."); return; }
     toast.success("Experiência removida");
     loadAll();
   }
