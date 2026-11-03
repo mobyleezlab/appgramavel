@@ -93,7 +93,8 @@ export default function ImageLightbox({ images, initialIndex = 0, open, onClose,
     }
     
     try {
-      await supabase.rpc("upsert_photo_reaction", { p_photo_id: currentPhotoId, p_user_id: userId, p_emoji: emoji });
+      const { error: reactError } = await supabase.rpc("upsert_photo_reaction", { p_photo_id: currentPhotoId, p_user_id: userId, p_emoji: emoji });
+      if (reactError) throw reactError;
       // Reload to sync with server
       const { data: counts } = await supabase.from("photo_reaction_counts").select("emoji, count").eq("photo_id", currentPhotoId);
       setReactions(counts?.filter(r => (r.count ?? 0) > 0) ?? []);

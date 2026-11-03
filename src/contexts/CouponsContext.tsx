@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useReducer, useMemo, useEffect } from "react";
 import { getUserCoupons, saveCoupon, unsaveCoupon, useCouponService } from "@/services/coupons";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 type State = { savedCoupons: string[]; usedCoupons: string[]; loaded: boolean };
 
 type Action =
   | { type: "INIT"; savedCoupons: string[]; usedCoupons: string[] }
   | { type: "TOGGLE_COUPON"; id: string }
-  | { type: "USE_COUPON"; id: string };
+  | { type: "USE_COUPON"; id: string }
+  | { type: "UNDO_USE_COUPON"; id: string };
 
 function couponsReducer(state: State, action: Action): State {
   switch (action.type) {
@@ -33,6 +35,8 @@ function couponsReducer(state: State, action: Action): State {
         usedCoupons: [...state.usedCoupons, action.id],
       };
     }
+    case "UNDO_USE_COUPON":
+      return { ...state, usedCoupons: state.usedCoupons.filter((i) => i !== action.id) };
     default:
       return state;
   }
@@ -94,15 +98,20 @@ export function CouponsProvider({ children }: { children: React.ReactNode }) {
       const result = wasSaved ? await unsaveCoupon(id) : await saveCoupon(id);
       if (result.error) {
         dispatch({ type: "TOGGLE_COUPON", id }); // revert
-        console.error("Failed to sync coupon", result.error);
+        toast.error("Não foi possível salvar o cupom. Tente novamente.");
       }
     },
     useCoupon: async (id: string) => {
       dispatch({ type: "USE_COUPON", id });
       const result = await useCouponService(id);
       if (result.error) {
-        console.error("Failed to use coupon", result.error);
+        dispatch({ type: "UNDO_USE_COUPON", id }); // revert
+        const err = result.error as { code?: string; message?: string };
+        if (err.code === "P0001" && err.message) toast.warning(err.message);
+        else toast.error("Não foi possível usar o cupom. Tente novamente.");
+        return;
       }
+      toast.success("Cupom utilizado!");
     },
     isCouponSaved: (id: string) => savedSet.has(id),
     isCouponUsed: (id: string) => usedSet.has(id),
