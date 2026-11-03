@@ -76,8 +76,8 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
 
   const handleClick = async (n: NotificationData) => {
     if (!n.read) {
-      await supabase.from("notifications").update({ read: true }).eq("id", n.id);
-      setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+      const { error } = await supabase.from("notifications").update({ read: true }).eq("id", n.id);
+      if (!error) setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
     }
     trackNotification("notification_click", n.id);
     if (n.redirect_url) {

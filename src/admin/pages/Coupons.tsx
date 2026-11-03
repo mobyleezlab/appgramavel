@@ -98,13 +98,14 @@ export default function CouponsPage() {
 
     // Upsert rules
     if (couponId) {
-      await supabase.from("coupon_rules").upsert({
+      const { error: rulesError } = await supabase.from("coupon_rules").upsert({
         coupon_id: couponId,
         rules: form.rules || null,
         min_order_value: form.min_order_value ? parseFloat(form.min_order_value) : null,
         max_uses: form.max_uses ? parseInt(form.max_uses) : null,
         max_uses_per_user: form.max_uses_per_user ? parseInt(form.max_uses_per_user) : 1,
       } as never, { onConflict: "coupon_id" });
+      if (rulesError) { toast.error("Cupom salvo, mas as regras não foram salvas. Tente novamente."); load(); return; }
     }
 
     toast.success(editing ? "Cupom atualizado" : "Cupom criado");
@@ -113,8 +114,9 @@ export default function CouponsPage() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from("coupon_rules").delete().eq("coupon_id", id);
-    await supabase.from("coupons").delete().eq("id", id);
+    const rules = await supabase.from("coupon_rules").delete().eq("coupon_id", id);
+    const coupon = rules.error ? rules : await supabase.from("coupons").delete().eq("id", id);
+    if (coupon.error) { toast.error("Não foi possível excluir o cupom. Tente novamente."); return; }
     toast.success("Cupom excluído");
     load();
   }
