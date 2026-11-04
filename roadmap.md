@@ -1,4 +1,9 @@
 # Notification tasks
+## Monitoring
+- [ ] Add production-only Sentry with privacy filtering and a reload fallback.
+- [ ] Add Vercel Analytics and Speed Insights with sanitized URLs; allow Sentry in CSP.
+- [ ] Run monitoring privacy tests and verify preview health.
+
 - [x] Add admin coupon visibility switch and apply visibility to user coupon lists.
 - [x] Test coupon visibility persistence and filtering (4 tests passed).
 - [ ] Verify coupon switch through authenticated admin UI — blocked by externally managed Supabase without an available authenticated browser session.
