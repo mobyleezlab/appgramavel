@@ -26,10 +26,10 @@
   }
 }
 
-/* Brand-tinted base map: soft, desaturated tiles with a light primary hue */
+/* Base map: soft, warm off-white tiles with pale green parks (Voyager-like) */
 .leaflet-container {
   background: hsl(var(--muted));
 }
 .leaflet-tile-pane {
-  filter: grayscale(0.85) sepia(0.15) hue-rotate(190deg) saturate(1.6) brightness(1.06) contrast(0.92);
+  filter: grayscale(0.88) sepia(0.15) saturate(0.88) brightness(1.12) contrast(0.83);
 }
