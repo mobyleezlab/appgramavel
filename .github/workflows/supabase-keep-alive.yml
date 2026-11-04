@@ -1,5 +1,7 @@
 name: Supabase Keep-Alive
 
+permissions: contents: read
+
 # Heartbeat mínimo e legítimo para manter o projeto Supabase ativo.
 # Executa um SELECT extremamente leve via REST API (PostgREST) a cada 3 dias.
 # Não escreve dados, não usa service_role, não gera tráfego excessivo.
