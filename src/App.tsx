@@ -14,7 +14,10 @@ import { useScrollRestore } from "@/hooks/useScrollRestore";
 import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
+import { setUser } from "@sentry/react";
+import { sanitizeAnalyticsUrl } from "@/lib/monitoring";
 import Privacidade from "./pages/Privacidade";
 
 // ---- Lazy route loaders (exposed so we can prefetch them on idle / on hover) ----
@@ -58,6 +61,15 @@ const queryClient = createAppQueryClient();
 
 function ScrollRestore() {
   useScrollRestore();
+  return null;
+}
+
+function MonitoringUser() {
+  const { user } = useAuth();
+  useEffect(() => {
+    if (import.meta.env.PROD) setUser(user?.id ? { id: user.id } : null);
+    return () => { if (import.meta.env.PROD) setUser(null); };
+  }, [user?.id]);
   return null;
 }
 
@@ -129,6 +141,9 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
+        <MonitoringUser />
+        {import.meta.env.PROD && <Analytics beforeSend={sanitizeAnalyticsUrl} />}
+        {import.meta.env.PROD && <SpeedInsights beforeSend={sanitizeAnalyticsUrl} />}
         <LocationProvider>
           <FavoritesProvider>
             <ReactionsProvider>
@@ -140,7 +155,6 @@ const App = () => (
                 >
                   <ScrollRestore />
                   <RoutePrefetcher />
-                  <ErrorBoundary>
                     <Suspense fallback={<RouteFallback />}>
                       <PageTransition>
                         <Routes>
@@ -183,7 +197,6 @@ const App = () => (
                         </Routes>
                       </PageTransition>
                     </Suspense>
-                  </ErrorBoundary>
                 </BrowserRouter>
               </CouponsProvider>
             </ReactionsProvider>

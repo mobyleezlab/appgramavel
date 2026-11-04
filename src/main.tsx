@@ -1,10 +1,29 @@
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
+import * as Sentry from "@sentry/react";
+import { sanitizeMonitoringEvent } from "./lib/monitoring";
+import MonitoringErrorFallback from "./components/MonitoringErrorFallback";
 import App from "./App.tsx";
 import "./index.css";
 
 // ---- Render IMMEDIATELY (no awaits before first paint) ----
-createRoot(document.getElementById("root")!).render(<App />);
+if (import.meta.env.PROD && import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    sendDefaultPii: false,
+    tracesSampleRate: 0.1,
+    beforeSend: sanitizeMonitoringEvent,
+    beforeSendTransaction: sanitizeMonitoringEvent,
+  });
+}
+
+const root = document.getElementById("root");
+if (!root) throw new Error("App root not found");
+createRoot(root).render(
+  <Sentry.ErrorBoundary fallback={<MonitoringErrorFallback />}>
+    <App />
+  </Sentry.ErrorBoundary>,
+);
 
 // ---- Service Worker setup runs in background, never blocks UI ----
 function isInIframe() {
