@@ -1,8 +1,9 @@
 # Notification tasks
 ## Monitoring
-- [ ] Add production-only Sentry with privacy filtering and a reload fallback.
-- [ ] Add Vercel Analytics and Speed Insights with sanitized URLs; allow Sentry in CSP.
-- [ ] Run monitoring privacy tests and verify preview health.
+- [x] Add production-only Sentry with privacy filtering and a reload fallback.
+- [x] Add Vercel Analytics and Speed Insights with sanitized URLs; allow Sentry in CSP.
+- [x] Run monitoring privacy tests (15 passed) and verify preview health and reload recovery.
+- [ ] Verify production telemetry delivery — requires VITE_SENTRY_DSN and Vercel Analytics/Speed Insights enabled in hosting.
 
 - [x] Add admin coupon visibility switch and apply visibility to user coupon lists.
 - [x] Test coupon visibility persistence and filtering (4 tests passed).
