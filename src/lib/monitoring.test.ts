@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Event } from "@sentry/react";
 import { sanitizeAnalyticsUrl, sanitizeMonitoringEvent } from "./monitoring";
 
 describe("monitoring privacy", () => {
@@ -10,7 +11,7 @@ describe("monitoring privacy", () => {
   });
 
   it("removes payloads, breadcrumbs and messages that may include personal information", () => {
-    const result = sanitizeMonitoringEvent({
+    const result = sanitizeMonitoringEvent<Event>({
       request: { url: "https://example.com?email=private@example.com", data: { password: "secret" } },
       extra: { name: "Private Name" },
       tags: { email: "private@example.com" },
