@@ -11,6 +11,7 @@ if (import.meta.env.PROD && import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
     sendDefaultPii: false,
+    integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 0.1,
     beforeSend: sanitizeMonitoringEvent,
     beforeSendTransaction: sanitizeMonitoringEvent,
