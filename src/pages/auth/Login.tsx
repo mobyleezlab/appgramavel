@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,21 +8,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { getSafeRedirect, savePostAuthRedirect, consumePostAuthRedirect } from "@/lib/auth";
 import logoSrc from "@/assets/logo_gramavel_header.svg";
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn, signInWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Guarda o destino validado para sobreviver ao fluxo de autenticação
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
+  useEffect(() => {
+    if (searchParams.get("redirect")) savePostAuthRedirect(redirect);
+  }, [searchParams, redirect]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await signIn(email, password);
-      
+
       // Check if user is admin to redirect correctly
       const { data: role } = await supabase
         .from("admin_roles")
@@ -33,9 +41,10 @@ export default function Login() {
 
       toast.success("Bem-vindo de volta!");
       if (role) {
+        consumePostAuthRedirect();
         navigate("/admin");
       } else {
-        navigate("/");
+        navigate(consumePostAuthRedirect());
       }
     } catch (err: any) {
       toast.error(err.message || "Erro ao entrar");
@@ -92,7 +101,7 @@ export default function Login() {
             </Link>
             <p className="text-xs text-muted-foreground">
               Não tem conta?{" "}
-              <Link to="/auth/register" className="text-primary font-semibold hover:underline">
+              <Link to={`/auth/register?redirect=${encodeURIComponent(redirect)}`} className="text-primary font-semibold hover:underline">
                 Criar conta
               </Link>
             </p>

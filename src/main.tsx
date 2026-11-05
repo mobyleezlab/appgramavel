@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { toast } from "sonner";
 import * as Sentry from "@sentry/react";
+import { HelmetProvider } from "react-helmet-async";
 import { sanitizeMonitoringEvent } from "./lib/monitoring";
 import MonitoringErrorFallback from "./components/MonitoringErrorFallback";
 import App from "./App.tsx";
@@ -22,7 +23,9 @@ const root = document.getElementById("root");
 if (!root) throw new Error("App root not found");
 createRoot(root).render(
   <Sentry.ErrorBoundary fallback={<MonitoringErrorFallback />}>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </Sentry.ErrorBoundary>,
 );
 
