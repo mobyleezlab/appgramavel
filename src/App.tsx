@@ -18,6 +18,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { setUser } from "@sentry/react";
 import { sanitizeAnalyticsUrl } from "@/lib/monitoring";
+import { AuthGateProvider } from "@/components/auth/AuthGate";
 import Privacidade from "./pages/Privacidade";
 
 // ---- Lazy route loaders (exposed so we can prefetch them on idle / on hover) ----
@@ -121,8 +122,12 @@ function PageLoader() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <PageLoader />;
-  if (!user) return <Navigate to="/auth/login" replace />;
+  if (!user) {
+    const target = `${location.pathname}${location.search}`;
+    return <Navigate to={`/auth/login?redirect=${encodeURIComponent(target)}`} replace />;
+  }
   return <>{children}</>;
 }
 
@@ -155,6 +160,7 @@ const App = () => (
                 >
                   <ScrollRestore />
                   <RoutePrefetcher />
+                  <AuthGateProvider>
                     <Suspense fallback={<RouteFallback />}>
                       <PageTransition>
                         <Routes>
@@ -176,14 +182,15 @@ const App = () => (
                             <Route path="*" element={<AdminRouter />} />
                           </Route>
 
+                          {/* Public app routes — visitantes navegam sem login */}
+                          <Route path="/" element={<Feed />} />
+                          <Route path="/map" element={<Explore />} />
+                          <Route path="/map/categoria/:category" element={<ExploreCategory />} />
+                          <Route path="/coupons" element={<Coupons />} />
+                          <Route path="/estabelecimento/:slug" element={<Establishment />} />
                           {/* Protected app routes */}
-                          <Route path="/" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-                          <Route path="/map" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
-                          <Route path="/map/categoria/:category" element={<ProtectedRoute><ExploreCategory /></ProtectedRoute>} />
-                          <Route path="/coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
                           <Route path="/roteiros/*" element={<Navigate to="/" replace />} />
                           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                          <Route path="/estabelecimento/:slug" element={<ProtectedRoute><Establishment /></ProtectedRoute>} />
                           <Route path="/perfil/favoritos" element={<ProtectedRoute><SavedPlaces /></ProtectedRoute>} />
                           <Route path="/perfil/lugares" element={<Navigate to="/perfil/favoritos" replace />} />
                           <Route path="/perfil/checkins" element={<ProtectedRoute><CheckInsPage /></ProtectedRoute>} />
@@ -197,7 +204,8 @@ const App = () => (
                         </Routes>
                       </PageTransition>
                     </Suspense>
-                </BrowserRouter>
+                  </AuthGateProvider>
+                 </BrowserRouter>
               </CouponsProvider>
             </ReactionsProvider>
           </FavoritesProvider>
