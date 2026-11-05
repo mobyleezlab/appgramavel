@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { consumePostAuthRedirect } from "@/lib/auth";
 import logoSvg from "@/assets/logo_gramavel_header.svg";
 
 export default function EmailConfirmed() {
@@ -13,7 +14,7 @@ export default function EmailConfirmed() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setStatus("success");
-        setTimeout(() => navigate("/"), 3000);
+        setTimeout(() => navigate(consumePostAuthRedirect()), 3000);
       } else {
         setStatus("error");
       }
@@ -44,7 +45,7 @@ export default function EmailConfirmed() {
               Sua conta no Gramável foi verificada com sucesso. Você será redirecionado em instantes...
             </p>
           </div>
-          <Button className="rounded-full" onClick={() => navigate("/")}>
+          <Button className="rounded-full" onClick={() => navigate(consumePostAuthRedirect())}>
             Começar a explorar
           </Button>
         </>

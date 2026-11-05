@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AgeScrollPicker } from "@/components/ui/AgeScrollPicker";
+import { getSafeRedirect, savePostAuthRedirect } from "@/lib/auth";
 import logoSrc from "@/assets/logo_gramavel_header.svg";
 
 const BRAZILIAN_STATES = [
@@ -32,6 +33,7 @@ function ageToBirthDate(age: number): string {
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
@@ -41,6 +43,12 @@ export default function Register() {
   });
 
   const set = (key: string, value: string) => setForm(f => ({ ...f, [key]: value }));
+
+  // Preserva o destino para depois da confirmação de e-mail
+  const redirect = getSafeRedirect(searchParams.get("redirect"));
+  useEffect(() => {
+    if (searchParams.get("redirect")) savePostAuthRedirect(redirect);
+  }, [searchParams, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +66,7 @@ export default function Register() {
         state: form.state || undefined,
       });
       toast.success("Conta criada! Verifique seu email.");
-      navigate("/auth/login");
+      navigate(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar conta");
     }
@@ -152,7 +160,7 @@ export default function Register() {
           </form>
           <p className="text-xs text-muted-foreground text-center mt-4">
             Já tem conta?{" "}
-            <Link to="/auth/login" className="text-primary font-semibold hover:underline">Entrar</Link>
+            <Link to={`/auth/login?redirect=${encodeURIComponent(redirect)}`} className="text-primary font-semibold hover:underline">Entrar</Link>
           </p>
         </CardContent>
       </Card>
