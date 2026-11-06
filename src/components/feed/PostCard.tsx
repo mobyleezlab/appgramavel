@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { useReactions } from "@/contexts/ReactionsContext";
 import { useLocation } from "@/contexts/LocationContext";
+import { useRequireAuth } from "@/components/auth/AuthGate";
 import { CANONICAL_REACTIONS } from "@/lib/constants";
 import { toast } from "sonner";
 import type { Post } from "@/data/mock";
@@ -20,6 +21,7 @@ export function PostCard({ post, isFirst = false }: PostCardProps) {
   const navigate = useNavigate();
   const [showReactions, setShowReactions] = useState(false);
   const { getDistance } = useLocation();
+  const requireAuth = useRequireAuth();
 
   const { getReaction, setReaction, getCountDelta } = useReactions();
 
@@ -60,6 +62,7 @@ export function PostCard({ post, isFirst = false }: PostCardProps) {
   const [animatingEmoji, setAnimatingEmoji] = useState<string | null>(null);
 
   const handleReact = (emoji: string) => {
+    if (!requireAuth("reagir a posts")) return;
     setReaction(post.id, emoji);
     setAnimatingEmoji(emoji);
     setTimeout(() => {
