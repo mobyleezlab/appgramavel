@@ -106,6 +106,15 @@ export default function Login() {
               </Link>
             </p>
           </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full rounded-full text-muted-foreground"
+            onClick={() => navigate("/")}
+          >
+            Continuar como visitante
+          </Button>
         </CardContent>
       </Card>
     </div>
