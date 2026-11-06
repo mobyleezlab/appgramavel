@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Bell, LogIn } from "lucide-react";
+import { useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { useLocation } from "@/contexts/LocationContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
 import { ChevronLeft } from "lucide-react";
 import logoSrc from "@/assets/logo_gramavel_header.svg";
@@ -17,13 +19,19 @@ interface GlobalHeaderProps {
 
 export function GlobalHeader({ showBack, title = "Gramável", onBack }: GlobalHeaderProps) {
   const navigate = useNavigate();
+  const routerLocation = useRouterLocation();
+  const { user } = useAuth();
   const { city } = useLocation();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
     getUnreadCount().then(({ data }) => setUnreadCount(data ?? 0));
-  }, [notificationsOpen]);
+  }, [notificationsOpen, user]);
 
   return (
     <>
@@ -52,16 +60,29 @@ export function GlobalHeader({ showBack, title = "Gramável", onBack }: GlobalHe
 
           {/* Right */}
           <div className="w-24 flex justify-end">
-            <button
-              onClick={() => setNotificationsOpen(true)}
-              className="relative p-3 rounded-full hover:bg-secondary transition-colors active:scale-95 min-w-[48px] min-h-[48px] flex items-center justify-center"
-              aria-label="Notificações"
-            >
-              <Bell className="w-5 h-5 text-muted-foreground" />
-              {unreadCount > 0 && (
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
-              )}
-            </button>
+            {user ? (
+              <button
+                onClick={() => setNotificationsOpen(true)}
+                className="relative p-3 rounded-full hover:bg-secondary transition-colors active:scale-95 min-w-[48px] min-h-[48px] flex items-center justify-center"
+                aria-label="Notificações"
+              >
+                <Bell className="w-5 h-5 text-muted-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                )}
+              </button>
+            ) : (
+              <Button
+                size="sm"
+                className="rounded-full gap-1.5 h-9 px-4"
+                onClick={() =>
+                  navigate(`/auth/login?redirect=${encodeURIComponent(routerLocation.pathname)}`)
+                }
+              >
+                <LogIn className="w-4 h-4" />
+                Entrar
+              </Button>
+            )}
           </div>
         </div>
       </header>
