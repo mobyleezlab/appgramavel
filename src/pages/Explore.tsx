@@ -15,6 +15,7 @@ import { isOpenNow } from "@/lib/utils";
 import ExploreMap from "@/components/map/ExploreMap";
 import "@/components/map/map-styles.css";
 import { trackExplore } from "@/lib/exploreTracking";
+import { Seo } from "@/components/Seo";
 
 const FILTER_CHIPS = [
   { label: "Perto de você", icon: MapPin },

@@ -1,35 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Ticket } from "lucide-react";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { CategoryBar } from "@/components/layout/CategoryBar";
 import { CouponCard } from "@/components/coupons/CouponCard";
+import { Seo } from "@/components/Seo";
 import { type Coupon } from "@/data/mock";
 import { getAllCoupons } from "@/services/coupons";
 
 export default function Coupons() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
 
-  useEffect(() => {
-    getAllCoupons().then(({ data }) => {
-      if (data) {
-        setCoupons(data.map((c: any) => ({
-          id: c.id,
-          title: c.title,
-          description: "",
-          code: c.code,
-          image: c.image || "",
-          establishment_id: c.establishment?.id || c.establishment_id || "",
-          establishment_name: c.establishment?.name || "",
-          establishment_avatar: c.establishment?.logo_url || "",
-          status: c.status || "active",
-          expires_at: c.expires_at,
-          category: c.category || "",
-        })));
-      }
-    });
-  }, []);
+  const { data: coupons = [] } = useQuery<Coupon[]>({
+    queryKey: ["coupons", "public-list"],
+    queryFn: async () => {
+      const { data } = await getAllCoupons();
+      return (data ?? []).map((c: any) => ({
+        id: c.id,
+        title: c.title,
+        description: "",
+        code: c.code,
+        image: c.image || "",
+        establishment_id: c.establishment?.id || c.establishment_id || "",
+        establishment_name: c.establishment?.name || "",
+        establishment_avatar: c.establishment?.logo_url || "",
+        status: c.status || "active",
+        expires_at: c.expires_at,
+        category: c.category || "",
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const filtered = selectedCategory
     ? coupons.filter((c) => c.category === selectedCategory)
@@ -37,6 +39,11 @@ export default function Coupons() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title="Cupons de desconto em Gramado e Canela — Gramável"
+        description="Economize em restaurantes, atrações e passeios em Gramado e Canela com os cupons do Gramável."
+        path="/coupons"
+      />
       <GlobalHeader title="Cupons" />
       <CategoryBar selected={selectedCategory} onSelect={setSelectedCategory} />
 

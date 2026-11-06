@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fetchPosts, fetchEstablishments, queryKeys, prefetchExploreData, prefetchPostsFilter } from "@/lib/queries";
 import { useLocation } from "@/contexts/LocationContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/components/auth/AuthGate";
+import { Seo } from "@/components/Seo";
 import { createCheckIn } from "@/services/checkIns";
 import { toast } from "sonner";
 import { CATEGORIES, type Post } from "@/data/mock";
@@ -49,6 +51,7 @@ export default function Feed() {
   const [dismissedCheckin, setDismissedCheckin] = useState<string | null>(null);
   const { coords, accuracy } = useLocation();
   const { user } = useAuth();
+  const requireAuth = useRequireAuth();
   const qc = useQueryClient();
 
   // Cache por filtro: se já houver dados desse filtro, mostra na hora.
@@ -129,11 +132,11 @@ export default function Feed() {
     };
   }, [loading, selectedCategory, qc]);
 
-  // Banner de check-in: usa os estabelecimentos já carregados no app (com coordenadas)
+  // Banner de check-in: usa os estabelecimentos já carregados no app (com coordenadas).
+  // Visível também para visitantes — o login é pedido apenas ao tocar em "Fazer check-in".
   const { data: establishments = [] } = useQuery({
     queryKey: queryKeys.establishments(),
     queryFn: fetchEstablishments,
-    enabled: !!user,
   });
 
   const nearbyCheckin = useMemo(() => {
@@ -151,7 +154,9 @@ export default function Feed() {
   }, [coords, establishments, dismissedCheckin]);
 
   const handleCheckin = async () => {
-    if (!nearbyCheckin || !user) return;
+    if (!nearbyCheckin) return;
+    if (!requireAuth("fazer check-in")) return;
+    if (!user) return;
     if (!coords) {
       toast.warning("Localização indisponível. Ative o GPS e tente novamente.");
       return;
@@ -175,6 +180,11 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-background pt-14">
+      <Seo
+        title="Gramável — Guia turístico de Gramado e Canela"
+        description="Descubra os melhores lugares de Gramado e Canela: restaurantes, atrações, cupons de desconto e dicas de quem visitou."
+        path="/"
+      />
       <GlobalHeader />
       <CategoryBar selected={selectedCategory} onSelect={setSelectedCategory} />
 
