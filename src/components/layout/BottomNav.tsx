@@ -1,8 +1,9 @@
-import { Home, Map, Ticket, User } from "lucide-react";
+import { Home, Map, Ticket, User, LogIn } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { prefetchExploreData, prefetchFeedData } from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = [
   { to: "/", icon: Home, label: "Feed" },
@@ -11,10 +12,16 @@ const NAV_ITEMS = [
   { to: "/profile", icon: User, label: "Perfil" },
 ];
 
+const GUEST_ITEM = { to: "/auth/login?redirect=/profile", icon: LogIn, label: "Entrar" };
 
 export function BottomNav() {
   const location = useLocation();
   const qc = useQueryClient();
+  const { user } = useAuth();
+
+  const items = user
+    ? NAV_ITEMS
+    : [...NAV_ITEMS.slice(0, 3), GUEST_ITEM];
 
   // Warm the cache the moment the user shows intent to navigate
   const handlePrefetch = (to: string) => {
@@ -25,8 +32,8 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]" aria-label="Navegação principal">
       <div className="max-w-2xl mx-auto flex justify-around items-center h-16">
-        {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
-          const active = to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+        {items.map(({ to, icon: Icon, label }) => {
+          const active = to === "/" ? location.pathname === "/" : location.pathname.startsWith(to.split("?")[0]);
           return (
             <NavLink
               key={to}

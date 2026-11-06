@@ -15,6 +15,7 @@ import { isOpenNow } from "@/lib/utils";
 import ExploreMap from "@/components/map/ExploreMap";
 import "@/components/map/map-styles.css";
 import { trackExplore } from "@/lib/exploreTracking";
+import { Seo } from "@/components/Seo";
 
 const FILTER_CHIPS = [
   { label: "Perto de você", icon: MapPin },
@@ -130,6 +131,11 @@ export default function Explore() {
 
   return (
     <div className="min-h-screen bg-background pt-14">
+      <Seo
+        title="Explorar Gramado e Canela no mapa — Gramável"
+        description="Veja no mapa os melhores restaurantes, cafés, atrações e hotéis de Gramado e Canela, com distância, horários e avaliações."
+        path="/map"
+      />
       <GlobalHeader title="Explorar" />
 
       <main className="max-w-2xl mx-auto px-4 pb-20 pt-[44px] space-y-6">

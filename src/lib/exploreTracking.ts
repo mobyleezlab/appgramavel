@@ -29,10 +29,12 @@ export async function trackExplore(
             })())
         : null;
     const { data: { user } } = await supabase.auth.getUser();
+    // Visitantes não gravam eventos — o banco recusa user_id nulo.
+    if (!user) return;
     await supabase.from("feed_events").insert({
       event_type,
       session_id: sessionId,
-      user_id: user?.id ?? null,
+      user_id: user.id,
       establishment_id: ids?.establishmentId ?? null,
       post_id: ids?.postId ?? null,
     } as never);

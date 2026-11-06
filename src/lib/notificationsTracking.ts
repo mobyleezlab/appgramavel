@@ -22,10 +22,12 @@ export async function trackNotification(base: string, id?: string) {
             })())
         : null;
     const { data: { user } } = await supabase.auth.getUser();
+    // Visitantes não gravam eventos — o banco recusa user_id nulo.
+    if (!user) return;
     await supabase.from("feed_events").insert({
       event_type,
       session_id: sessionId,
-      user_id: user?.id ?? null,
+      user_id: user.id,
     } as never);
   } catch {
     // tracking nunca pode quebrar UX

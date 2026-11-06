@@ -21,6 +21,8 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
 import ImageLightbox from "@/components/ui/ImageLightbox";
 import { useFavorites } from "@/contexts/FavoritesContext";
+import { useRequireAuth } from "@/components/auth/AuthGate";
+import { Seo } from "@/components/Seo";
 import { getEstablishmentBySlug } from "@/services/establishments";
 import { getReviewsByEstablishment } from "@/services/reviews";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +51,7 @@ export default function EstablishmentPage() {
   const [showMapSheet, setShowMapSheet] = useState(false);
 
   const { isPlaceSaved, toggleSavedPlace } = useFavorites();
+  const requireAuth = useRequireAuth();
 
   useEffect(() => {
     if (!slug) return;
@@ -166,7 +169,7 @@ export default function EstablishmentPage() {
     { icon: Navigation, label: "Como chegar", action: handleNavigate },
     { icon: Info, label: "Informações", action: () => setShowDetails(true) },
     { icon: Share, label: "Compartilhar", action: handleShare },
-    { icon: isSaved ? BookmarkCheck : Bookmark, label: "Salvar", action: () => isSaved ? toggleSavedPlace(est.id) : setShowSave(true), active: isSaved },
+    { icon: isSaved ? BookmarkCheck : Bookmark, label: "Salvar", action: () => { if (!requireAuth("salvar este lugar")) return; isSaved ? toggleSavedPlace(est.id) : setShowSave(true); }, active: isSaved },
   ];
 
   const todayIndex = new Date().getDay();
@@ -188,6 +191,12 @@ export default function EstablishmentPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title={`${est.name} — Gramável`}
+        description={est.description || `Conheça ${est.name} em Gramado e Canela: fotos, avaliações, horários e como chegar.`}
+        path={`/estabelecimento/${est.slug}`}
+        image={est.image_url || undefined}
+      />
       <GlobalHeader showBack title={est.name} />
 
       <main className="max-w-2xl mx-auto px-4 pb-20 space-y-4 pt-20">
@@ -270,7 +279,7 @@ export default function EstablishmentPage() {
             </TabsContent>
 
             <TabsContent value="avaliacoes" className="p-4 space-y-4">
-              <Button variant="outline" className="w-full gap-2 rounded-full">
+              <Button variant="outline" className="w-full gap-2 rounded-full" onClick={() => requireAuth("avaliar este local")}>
                 <MessageSquarePlus className="h-4 w-4" /> Deixar avaliação
               </Button>
               {reviews.length > 0 ? (
