@@ -10,6 +10,7 @@ import { CATEGORIES, MOCK_ESTABLISHMENTS, type Establishment } from "@/data/mock
 import { getEstablishmentsByCategory } from "@/services/establishments";
 import { getAllCoupons } from "@/services/coupons";
 import { trackExplore } from "@/lib/exploreTracking";
+import { Seo } from "@/components/Seo";
 
 const CATEGORY_BANNERS: Record<string, string> = {
   "Restaurantes": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop",
@@ -123,6 +124,11 @@ export default function ExploreCategory() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Seo
+        title={`${selectedCategory} em Gramado e Canela — Gramável`}
+        description={`Os melhores lugares de ${selectedCategory} em Gramado e Canela, com avaliações, distância e cupons.`}
+        path={`/map/categoria/${encodeURIComponent(selectedCategory)}`}
+      />
       <GlobalHeader showBack title={selectedCategory} onBack={() => navigate("/map")} />
       <main className="max-w-2xl mx-auto pb-20 pt-14 space-y-4">
         {/* Banner */}
