@@ -1,10 +1,12 @@
-import { Calendar } from "lucide-react";
+import { Calendar, Lock } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRequireAuth } from "@/components/auth/AuthGate";
 import type { Coupon } from "@/data/mock";
 
 const STATUS_BADGE = {
@@ -15,7 +17,14 @@ const STATUS_BADGE = {
 
 export function CouponCard({ coupon }: { coupon: Coupon }) {
   const [showQR, setShowQR] = useState(false);
+  const { user } = useAuth();
+  const requireAuth = useRequireAuth();
   const badge = STATUS_BADGE[coupon.status];
+
+  const handleActivate = () => {
+    if (!requireAuth("salvar e ver o código do cupom")) return;
+    setShowQR(true);
+  };
 
   return (
     <>
@@ -46,18 +55,31 @@ export function CouponCard({ coupon }: { coupon: Coupon }) {
             <span>Válido até {new Date(coupon.expires_at).toLocaleDateString("pt-BR")}</span>
           </div>
 
-          <Button
-            size="sm"
-            className="w-full text-sm h-10 rounded-full"
-            disabled={coupon.status !== "active"}
-            onClick={() => setShowQR(true)}
-          >
-            {badge.buttonText}
-          </Button>
+          {user ? (
+            <Button
+              size="sm"
+              className="w-full text-sm h-10 rounded-full"
+              disabled={coupon.status !== "active"}
+              onClick={handleActivate}
+            >
+              {badge.buttonText}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full text-sm h-10 rounded-full gap-2"
+              onClick={handleActivate}
+            >
+              <Lock className="w-3.5 h-3.5" />
+              Entre para salvar e ver o código
+            </Button>
+          )}
         </CardContent>
       </Card>
 
-      {/* QR Dialog */}
+      {/* QR Dialog — apenas para usuários logados */}
+      {user && (
       <Dialog open={showQR} onOpenChange={setShowQR}>
         <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
@@ -80,6 +102,7 @@ export function CouponCard({ coupon }: { coupon: Coupon }) {
           </div>
         </DialogContent>
       </Dialog>
+      )}
     </>
   );
 }
