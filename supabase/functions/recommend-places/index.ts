@@ -1,5 +1,5 @@
 import type {} from "./generated/models.d.ts";
-import { generateResponse, GatewayError } from "npm:@lovable.dev/ai-gateway@0.1.11";
+import { generateResponse, GatewayError } from "@lovable.dev/ai-gateway";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { validatePreferences, validateRecommendations, isRegionalPlace } from "./validation.ts";

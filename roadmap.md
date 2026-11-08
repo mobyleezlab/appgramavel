@@ -1,8 +1,8 @@
 # Notification tasks
 ## Visitor recommendations
-- [ ] Add a public preferences page linked from Explore and recommend only public, registered places using AI Gateway.
-- [ ] Validate preferences and model results; preserve input on errors and support cancellation.
-- [ ] Run recommendation tests and verify a real visitor request through the UI.
+- [x] Add a public preferences page linked from Explore and recommend only public, registered places using AI Gateway.
+- [x] Validate preferences and model results; preserve input on errors and support cancellation.
+- [x] Run recommendation tests (22 passed) and verify a real visitor request through the UI (HTTP 200, three recommendations and detail navigation).
 
 ## Monitoring
 - [x] Add production-only Sentry with privacy filtering and a reload fallback.

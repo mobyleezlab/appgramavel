@@ -2,3 +2,4 @@ project_id = "smbbeqvaesbkqygxnmxf"
 
 [functions.recommend-places]
 verify_jwt = false
+import_map = "./functions/recommend-places/deno.json"
