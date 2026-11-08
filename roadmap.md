@@ -1,4 +1,9 @@
 # Notification tasks
+## Visitor recommendations
+- [ ] Add a public preferences page linked from Explore and recommend only public, registered places using AI Gateway.
+- [ ] Validate preferences and model results; preserve input on errors and support cancellation.
+- [ ] Run recommendation tests and verify a real visitor request through the UI.
+
 ## Monitoring
 - [x] Add production-only Sentry with privacy filtering and a reload fallback.
 - [x] Add Vercel Analytics and Speed Insights with sanitized URLs; allow Sentry in CSP.

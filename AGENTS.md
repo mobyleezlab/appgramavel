@@ -1,4 +1,5 @@
 # Architecture rules
+- Run visitor recommendations in a public Supabase edge function using AI Gateway; read the catalog as anon and validate returned IDs against that catalog so recommendations cannot expose private or invented places. Do not persist or log preference text.
 - Initialize Sentry only in production and sanitize outgoing events through a technical-field allowlist; wrap the root with its boundary so provider and route errors are captured.
 - Strip URL query strings and fragments from Vercel analytics and performance events to prevent auth callbacks and searches leaking data.
 - Keep coupon visibility separate from lifecycle status; filter user queries and enforce visibility in database access policies so disabling preserves expiration and usage history.
