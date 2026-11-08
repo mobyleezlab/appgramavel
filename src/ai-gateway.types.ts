@@ -1,0 +1,1 @@
+import type {} from "../supabase/functions/recommend-places/generated/models";

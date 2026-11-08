@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { Search, X, MapPin, Clock, Star, TrendingUp, Dog } from "lucide-react";
+import { Search, X, MapPin, Clock, Star, TrendingUp, Dog, Sparkles, ArrowUpRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { FilterChip, FilterChipsBar } from "@/components/ui/FilterChips";
 import { useNavigate } from "react-router-dom";
 import { GlobalHeader } from "@/components/layout/GlobalHeader";
@@ -139,6 +140,9 @@ export default function Explore() {
       <GlobalHeader title="Explorar" />
 
       <main className="max-w-2xl mx-auto px-4 pb-20 pt-[44px] space-y-6">
+        <Button variant="outline" className="w-full min-h-12 whitespace-normal text-primary border-primary/30 bg-primary/5" onClick={() => navigate("/map/para-voce")}>
+          <Sparkles /> Lugares para você · IA <ArrowUpRight className="ml-auto" />
+        </Button>
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
