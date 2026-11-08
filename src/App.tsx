@@ -23,6 +23,7 @@ import Privacidade from "./pages/Privacidade";
 
 // ---- Lazy route loaders (exposed so we can prefetch them on idle / on hover) ----
 const loadExplore = () => import("./pages/Explore");
+const loadRecommendations = () => import("./pages/Recommendations");
 const loadExploreCategory = () => import("./pages/ExploreCategory");
 const loadCoupons = () => import("./pages/Coupons");
 const loadEstablishment = () => import("./pages/Establishment");
@@ -41,6 +42,7 @@ const loadAdminRouter = () => import("./admin/AdminRouter");
 const loadAdminLogin = () => import("./admin/pages/AdminLogin");
 
 const Explore = lazy(loadExplore);
+const Recommendations = lazy(loadRecommendations);
 const ExploreCategory = lazy(loadExploreCategory);
 const Coupons = lazy(loadCoupons);
 const Establishment = lazy(loadEstablishment);
@@ -185,6 +187,7 @@ const App = () => (
                           {/* Public app routes — visitantes navegam sem login */}
                           <Route path="/" element={<Feed />} />
                           <Route path="/map" element={<Explore />} />
+                          <Route path="/map/para-voce" element={<Recommendations />} />
                           <Route path="/map/categoria/:category" element={<ExploreCategory />} />
                           <Route path="/coupons" element={<Coupons />} />
                           <Route path="/estabelecimento/:slug" element={<Establishment />} />
